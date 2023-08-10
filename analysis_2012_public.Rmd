@@ -1,0 +1,2709 @@
+---
+title: "mics4 2012"
+author: "Lisa"
+date: "4 novembre 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+
+## analysis of mics4 2012 data
+
+
+### set-up
+
+```{r options}
+# OR | operator | 
+options(scipen = 999) # suppress scientific notion
+```
+
+
+
+```{r install and load}
+
+## check which packages are not installed 
+## if packages are not installed; install them and load
+
+# Code found originally here
+# https://vbaliga.github.io/verify-that-r-packages-are-installed-and-loaded/
+
+# now you can access it here:
+# https://vbaliga.github.io/posts/2019-04-28-verify-that-r-packages-are-installed-and-loaded/
+# revised to fit here
+
+
+
+## First specify the packages of interest
+packages = c("tidyverse", 
+             "janitor",
+             "haven", 
+             "sjPlot",      # overview variables
+             "lubridate",   # working with dates
+             "survey",      # working with complex survey data
+             "naniar",      # i.e. replace with NA
+             "jtools",      # summ()
+             "MASS",        # stepAIC
+             "car",         # vif function
+             "viridis",
+             "lme4",
+             "gtsummary",
+             "ggpubr",
+             "ggcorrplot",
+             "sf",
+             "tmap")
+
+## Now load or install&load all
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)
+
+
+```
+
+
+### data import
+
+```{r dataset mics6 ch}
+
+# package haven
+mics4.ch <- read_sav("./data/mics4/ch.sav")  # 11258 obs
+
+```
+
+```{r dataset mics6 wm}
+
+mics4.wm <- read_sav("./data/mics4/wm.sav")  # 23937 obs
+
+```
+
+
+
+### data preparation
+
+
+#### mics4.ch - children <= 5: selecting data
+
+```{r clean variable names mics4.ch}
+# change names of variables
+# ideally, variable names are all in lower case
+# I want to be consistent with all my code
+
+mics4.ch %>% clean_names() -> mics4.ch
+
+```
+
+
+```{r selecting variables children dataset}
+
+mics4.ch_2 <- subset(mics4.ch, select = c("hh1", # cluster number
+                                          "hh2", # household number
+                                          "uf1", # cluster number
+                                          "uf2", # household number
+                                          "uf4", # child's line number
+                                          "uf6", # mother / caretakers ln
+                                          "ag2", # age of child (years)
+                                          "cage", # age (months)
+                                          "caged", # age (days)
+                                          "hh6",   # area
+                                          "hh7",   # province
+                                          "hh7r", # region
+                                          "uf8d", # day interview
+                                          "uf8y", # year interview
+                                          "uf8m", # month interview
+                                          "ag1d", # Day birthdate child
+                                          "ag1m", # month birthdate child
+                                          "ag1y", # year birthdate child
+                                          "im1",  # vaccination card
+                                          "im2",    # ever had vaccination card
+                                          "im5",    # Child received any other vaccinations
+                                          "im3h0d", # HepB at birth
+                                          "im3h0m",
+                                          "im3h0y",
+                                          "im3h1d", # DTPw-HepB-Hib 1
+                                          "im3h1m", 
+                                          "im3h1y", 
+                                          "im3h2d", # DTPw-HepB-Hib 2
+                                          "im3h2m", 
+                                          "im3h2y", 
+                                          "im3h3d", # DTPw-HepB-Hib 3
+                                          "im3h3m", 
+                                          "im3h3y", 
+                                          
+                                          "im3bd",  # BCG immunization
+                                          "im3bm",
+                                          "im3by",
+                                          "im7",   # Child ever given BCG vaccination
+                                          
+                                          "im3p1d", # Polio 1
+                                          "im3p1m",
+                                          "im3p1y",
+                                          
+                                          "im3p2d", # Polio 2
+                                          "im3p2m",
+                                          "im3p2y",
+                                          
+                                          "im3p3d", # Polio 3
+                                          "im3p3m",
+                                          "im3p3y",
+                                          
+                                          "im8",   # Child ever given Polio vaccination
+                                          "im9",   # Polio first given just after birth or later
+                                          "im10", # Times child given Polio vaccination
+                                          
+                                          "im3md", # measles
+                                          "im3mm",
+                                          "im3my",
+                                          
+                                          "im16",  # Child ever given Measles or MMR vaccination
+                                          
+                                          "im11",   # Child ever given DPT vaccination
+                                          "im12",
+                                          
+                                          "im13",   # Child ever given hep B
+                                          "im14",
+                                          "im15",   # Times child given HepB vaccination
+                                          "ethnicity", 
+                                          "melevel", 
+                                          "windex5", 
+                                          "hl4", 
+                                          "chweight", 
+                                          "hh6a", 
+                                          "hh6b",
+                                          "ed4a",
+                                          "ed4b",
+                                          "religion",
+                                        "uf9",             # completion of questionnaire
+                                        "lang",
+                                        "im6",
+                                        "cage_11"
+                                        ))   
+
+```
+
+
+
+
+#### mics4.wm - women: selecting data
+
+```{r clean variable names mics4.wm}
+# change names of variables
+# ideally, variable names are all in lower case
+mics4.wm %>% clean_names() -> mics4.wm
+
+```
+
+
+```{r anc data}
+
+# which women had live birth in the previous 2 years
+mics4.wm %>% count(cm13, wm7)
+
+# question: have you ever given birth
+mics4.wm %>% count(cm1, cm13)
+
+```
+
+
+```{r selecting variables}
+
+# selecting subset of variables of women's dataset
+mics4.wm_2 <- subset(mics4.wm, select = c("wm1",   # cluster number
+                                          "wm2",   # hh number
+                                          "wm4",   # women's line number
+                                          "hh1",   # cluster number
+                                          "hh2",   # hh number
+                                          "ln",    # line number
+                                          "wm7",   # completion of interview
+                                          "wb1m",  # month birth of woman
+                                          "wb1y",  # year birth of woman
+                                          "wb2",   # age of woman
+                                          "cm1",   # has woman ever given birth?
+                                          "cm13",  # live birth in last two years or not
+                                          "mn1",   # received ANC
+                                          "mn2a",  # who gave ANC
+                                          "mn2b", 
+                                          "mn2c", 
+                                          "mn2f", 
+                                          "mn2g", 
+                                          "mn2x", 
+                                          "mn2am", 
+                                          "mn3",     # times received ANC
+                                          "mn17a",   # assistance at delivery
+                                          "mn17b",
+                                          "mn17c",
+                                          "mn17f",
+                                          "mn17g",
+                                          "mn17h",
+                                          "mn17x",
+                                          "mn17y",
+                                          "mn18",       # place of delivery
+                                          "wmweight"
+                                          ))
+
+# change variable name in women dataset in order to match with children's
+mics4.wm_2$uf6 <- mics4.wm_2$ln
+
+mics4.wm_2 %>% count(uf6, ln) # to check if same
+
+```
+
+
+#### merging mics4.ch and mics4.wm: mics4.ch.wm
+
+```{r merging children and women's data}
+
+# Merge joining variables from dataset woman to dataset children_2012 using as key variable: UF4 (mothers or caretakers line number in ch.sav).
+# Common variables used to merge are: HH1, HH2, UF4 in children, LN in women
+mics4.ch.wm <- merge(mics4.ch_2, mics4.wm_2, by=c("hh1", "hh2", "uf6"), all.x = TRUE)
+
+```
+
+
+
+
+### data preparation: create variables
+
+
+#### socio-economic factors
+
+
+```{r participation}
+
+mics4.ch.wm %>% count(uf9) # we use only completed questionnaires
+
+```
+
+
+```{r hh id}
+
+# Household ID
+mics4.ch.wm %>% 
+  unite(hh_id, c(hh1, hh2), sep = "_", remove = FALSE, na.rm = FALSE) -> mics4.ch.wm
+
+
+# Unique IDs
+mics4.ch.wm %>% group_by(hh_id) %>% summarize(n=n()) # 8,171 unique IDs
+
+
+# Are there any duplicates?
+mics4.ch.wm %>% group_by(hh_id) %>% filter(n()>1) %>% summarize(n=n())
+2555/8171 # 31.3%
+
+# filter households that are only once in the dataset
+mics4.ch.wm %>% group_by(hh_id) %>% filter(n()<2) # 5616
+5616/8171 # 68.7%
+
+mics4.ch.wm %>% 
+  filter(ag2 <3) %>% 
+  group_by(hh_id) %>% filter(n()>1) %>% summarize(n=n()) # 806 obs
+
+```
+
+
+```{r hh double}
+
+mics4.ch.wm %>% group_by(hh_id) %>% mutate(duplicate.hh = n()>1) %>% ungroup() -> mics4.ch.wm
+
+mics4.ch.wm %>% count(duplicate.hh) # TRUE 5642
+
+```
+
+
+```{r child id}
+# Need a unique id for each child
+# uf4 should be the individual number of each child (LN of child)
+# uf1 = HH1
+# uf2 = HH2
+mics4.ch.wm %>% 
+  unite(ch_id, c(uf1, uf2, uf4), sep = "_", remove = FALSE, na.rm = FALSE) -> mics4.ch.wm
+
+mics4.ch.wm %>% group_by(ch_id) %>% filter(n()>1) %>% summarize(n=n()) # none...
+# identify each child
+
+```
+
+```{r child order}
+# Label the order of the children by household according to age
+mics4.ch.wm %>% 
+  group_by(hh_id) %>% 
+  arrange(caged) %>%                                     # youngest child = 1 - this way
+  mutate(child_order = row_number()) %>% ungroup() -> mics4.ch.wm     #-> age
+  
+
+mics4.ch.wm %>% 
+  filter(duplicate.hh == TRUE) %>% 
+  arrange(hh_id) %>% 
+  dplyr::select(hh_id, ch_id, ag2, child_order) 
+
+# This variable needs to be redefined in each subset -> child order may be different in the different subsets
+
+```
+
+
+```{r women id}
+
+# WM1 cluster number
+# WM2 household number
+# WM4 line number
+mics4.ch.wm %>% 
+  unite(wm_id, c(wm1, wm2, wm4), sep = "_", remove = FALSE, na.rm = FALSE) -> mics4.ch.wm
+# But be careful, can be the same as child id
+
+mics4.ch.wm %>% group_by(wm_id) %>% filter(n()>1) %>% summarize(n=n())
+# yes, now we have duplicates; sometimes more
+
+# What about the NA_NA_NA
+mics4.ch.wm %>% filter(wm_id == "NA_NA_NA") # 319
+# Children for which there is no mother data
+#  Need to be excluded
+# Caretaker answered the questionnaire
+
+```
+
+
+```{r wm double}
+
+# how many wm_ids are double?
+mics4.ch.wm %>% group_by(wm_id) %>% mutate(dup.wm = n()>1) %>% ungroup -> mics4.ch.wm
+
+mics4.ch.wm %>% count(dup.wm) # 5211	
+### This variable needs to be re-defined in each subset
+
+```
+
+
+```{r strata}
+# Are the strata defined the same way for both studies?
+
+mics4.ch.wm %>% unite(strata, c(hh7, hh6), sep = "_", remove = FALSE, na.rm = FALSE) -> mics4.ch.wm
+mics4.ch.wm %>% count(strata) # 49
+
+```
+
+
+```{r date of interview}
+# Day of the interview
+mics4.ch.wm$uf8d_2 <- as.numeric(as.character(mics4.ch.wm$uf8d))
+mics4.ch.wm$uf8y_2 <- as.numeric(as.character(mics4.ch.wm$uf8y))
+mics4.ch.wm$uf8m_2 <- as.numeric(as.character(mics4.ch.wm$uf8m))
+
+mics4.ch.wm %>% mutate(i_date = make_date(uf8y_2, uf8m_2, uf8d_2)) -> mics4.ch.wm
+
+```
+
+
+```{r date of birth child}
+
+mics4.ch.wm$ag1d_2 <- as.numeric(mics4.ch.wm$ag1d)
+mics4.ch.wm$ag1m_2 <- as.numeric(mics4.ch.wm$ag1m)
+mics4.ch.wm$ag1y_2 <- as.numeric(mics4.ch.wm$ag1y)
+
+mics4.ch.wm %>%  mutate(dob_ch = make_date(ag1y_2, ag1m_2, ag1d_2)) -> mics4.ch.wm
+
+```
+
+
+```{r age}
+
+# in earlier analyses, the variable "age" was used categorical, collapsed in two groups 
+mics4.ch.wm %>% mutate(ag2_2 = ifelse(ag2 == 0, 0, 1)) -> mics4.ch.wm
+mics4.ch.wm %>% count(ag2, ag2_2)
+
+# age information copied into a new variable
+mics4.ch.wm$ag2_3 <- mics4.ch.wm$ag2
+mics4.ch.wm %>% count(ag2, ag2_3, ag2_2)
+
+```
+
+
+```{r ethnicity}
+
+# Ethnicity of household head
+# Not the same variable as in mics6
+
+mics4.ch.wm %>% count(ethnicity)
+
+mics4.ch.wm %>% mutate(ethnicity_r = ifelse(ethnicity == 1, 1,
+                                  ifelse(ethnicity == 2, 2,
+                                  ifelse(ethnicity == 3, 3, 4)))) -> mics4.ch.wm
+mics4.ch.wm %>% count(ethnicity, ethnicity_r)
+
+# The numbers for "Other" are very low
+# variable should be grouped once more?
+mics4.ch.wm %>% mutate(ethnicity_r_2 = ifelse(ethnicity == 1, 1,
+                                    ifelse(ethnicity == 2, 2,
+                                    ifelse(ethnicity == 3, 3, 2)))) -> mics4.ch.wm
+mics4.ch.wm %>% count(ethnicity, ethnicity_r_2)
+
+```
+
+
+```{r lang}
+# Language group of household head
+mics4.ch.wm %>% count(lang)
+
+mics4.ch.wm %>% mutate(lang_r = ifelse(lang == 1, 1,
+                             ifelse(lang == 2, 2,
+                             ifelse(lang == 3, 3, 4)))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(lang, lang_r)
+
+# The numbers for "Chinese-Tibetan" are very low
+# variable should be grouped once more?
+mics4.ch.wm %>% mutate(lang_r_2 = ifelse(lang == 1, 1,
+                               ifelse(lang == 2, 2,
+                               ifelse(lang == 3, 3, 2)))) -> mics4.ch.wm
+mics4.ch.wm %>% count(lang, lang_r_2)
+
+```
+
+
+```{r region}
+
+mics4.ch.wm %>% count(hh7r, hh7) # provinces are grouped
+
+# new variable; "center" should be the reference
+mics4.ch.wm %>% mutate(hh7r_2 = ifelse(hh7r == 2, 0,
+                                ifelse(hh7r == 3, 2, 1))) -> mics4.ch.wm
+
+```
+
+
+```{r melevel}
+
+mics4.ch.wm %>% count(melevel)
+
+mics4.ch.wm %>% mutate(melevel_r = ifelse(melevel == 1, 0, 1)) -> mics4.ch.wm
+
+mics4.ch.wm %>% mutate(melevel_r_2 = ifelse(melevel == 1, 0, 
+                                     ifelse(melevel == 2, 1, 2))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(melevel, melevel_r, melevel_r_2)
+
+```
+
+
+```{r windex}
+
+mics4.ch.wm %>% count(windex5) # 0 does not belong here: These are the non-responders
+
+mics4.ch.wm %>% filter(windex5 == 0) %>% count(uf9) # questionnaire is not complete
+
+
+
+# replace with NA
+mics4.ch.wm %>% replace_with_na(replace = list(windex5 = 0)) -> mics4.ch.wm
+
+mics4.ch.wm %>% mutate(windex5_2 = ifelse(windex5 == 1, 1, 2)) -> mics4.ch.wm
+
+mics4.ch.wm %>% mutate(windex5_3 = ifelse(windex5 == 1, 1, 
+                                   ifelse(windex5 == 2, 1,
+                                   ifelse(windex5 == 3, 2,
+                                   ifelse(windex5 == 4, 2, 3))))) -> mics4.ch.wm
+
+```
+
+
+```{r area}
+
+mics4.ch.wm %>% count(hh6, hh6a)
+
+```
+
+
+
+
+#### antenatal care variables
+
+
+```{r anc}
+# received ANC
+mics4.ch.wm %>% count(mn1) # "missing" should be NA
+
+mics4.ch.wm %>% replace_with_na(replace = list(mn1 = "9")) -> mics4.ch.wm
+
+```
+
+
+```{r assistance at delivery}
+
+mics4.ch.wm %>% 
+  unite(mn17_all, c("mn17a", "mn17b", "mn17c", "mn17f", "mn17g", "mn17h", "mn17x", 
+                    "mn17y"), sep = "_", remove = FALSE, na.rm = FALSE) -> mics4.ch.wm
+
+class(mics4.ch.wm$mn17_all) 
+mics4.ch.wm %>% count(mn17_all)
+
+mics4.ch.wm %>% 
+  replace_with_na(replace = list(mn17_all = "NA_NA_NA_NA_NA_NA_NA_NA")) -> mics4.ch.wm
+mics4.ch.wm %>% count(mn17_all)
+
+mics4.ch.wm %>% 
+  replace_with_na(replace = list(mn17_all = "?_?_?_?_?_?_?_?")) -> mics4.ch.wm
+mics4.ch.wm %>% count(mn17_all)
+
+mics4.ch.wm %>% 
+  replace_with_na(replace = list(mn17_all = "_______")) -> mics4.ch.wm
+mics4.ch.wm %>% count(mn17_all)
+
+mics4.ch.wm %>% 
+  mutate(mn17_all_1 = ifelse((str_detect(mn17_all, "A") |
+                            (str_detect(mn17_all, "B") |
+                            (str_detect(mn17_all, "C")))), 1, 0)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(mn17_all, mn17_all_1) 
+
+```
+
+
+```{r mn3}
+# Times received antenatal care
+mics4.ch.wm %>% count(mn1, mn3)
+
+mics4.ch.wm %>% mutate(mn3_2 = ifelse(mn3 <= 3, 1,
+                               ifelse(mn3 > 3, 2, ""))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(mn3, mn3_2)
+mics4.ch.wm %>% count(mn3_2)
+
+```
+
+
+```{r anc mn1 and mn3 combined}
+
+mics4.ch.wm %>% count(mn3_2)
+
+mics4.ch.wm %>% count(mn1, mn3_2)
+
+mics4.ch.wm %>% mutate(mn1_mn3 = ifelse((mn1 == 1 & mn3_2 == 1), 1,
+                                 ifelse((mn1 == 1 & mn3_2 == 2), 2, 0))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(mn1, mn3_2, mn1_mn3) 
+# 0 no
+# 1 yes, less than 4
+# 2 yes, more than 4 visits, incl 4
+
+```
+
+
+```{r mn18 pob}
+
+# place of delivery 
+
+mics4.ch.wm %>% count(mn18) # this is not necessarily the place of birth of that exact child
+
+# 99 is "missing" -> that should be NA
+
+mics4.ch.wm %>% replace_with_na(replace = list(mn18 = "99")) -> mics4.ch.wm
+
+# Question was asked to women with a live birth in the last two years
+
+mics4.ch.wm %>% 
+  dplyr::mutate(mn18 = as.factor(mn18)) %>% 
+  dplyr::mutate(pob = dplyr::recode(mn18,
+                        "11" = "1", # home
+                        "12" = "1", # other home
+                        "21" = "2", # hospital
+                        "22" = "2", # HC
+                        "26" = "2", # other public
+                        "31" = "3", # priv hospital
+                        "32" = "3", # priv clinic
+                        "33" = "3", # priv maternity home
+                        "36" = "3", # other priv
+                        "96" = "3"  # other
+                       )) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(pob) 
+
+mics4.ch.wm %>% 
+  mutate(pob_2 = dplyr::recode(mn18,
+                        "11" = "1",  # home
+                        "12" = "1",  # home
+                        "21" = "3",  # gov hospital
+                        "22" = "2",  # gov HC
+                        "26" = "3",  # gov other
+                        "31" = "3",  # priv hospital
+                        "32" = "3",  # priv clinic
+                        "33" = "3",  # priv mat. home
+                        "36" = "3",  # priv other
+                        "96" = "3"   # other
+                       )) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(pob_2)
+
+mics4.ch.wm %>% mutate(pob_3 = dplyr::recode(mn18,
+                        "11" = "1",  # home
+                        "12" = "1",  # home
+                        "21" = "2",  # gov hospital
+                        "22" = "2",  # gov HC
+                        "26" = "2",  # gov other
+                        "31" = "2",  # priv hospital
+                        "32" = "2",  # priv clinic
+                        "33" = "2",  # priv mat. home
+                        "36" = "2",  # priv other
+                        "96" = "2"   # other
+                       )) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(pob_3)
+
+```
+
+
+
+#### information regarding vaccination
+
+
+```{r vaccination card}
+
+mics4.ch.wm %>% count(im1) # vaccination card is present and used to transcribe the dates
+mics4.ch.wm %>% count(im1, im2) # referral to other questions
+
+```
+
+
+```{r recall}
+
+mics4.ch.wm %>% count(im1, im2)
+
+mics4.ch.wm %>% count(im5) # Child received any other vaccinations; probing question
+mics4.ch.wm %>% count(im1, im2, im5)
+
+mics4.ch.wm %>% count(im6) # Child ever received any vaccinations
+mics4.ch.wm %>% count(im1, im2, im5, im6)
+
+# if im1 was answered with yes -> no recall
+mics4.ch.wm %>% mutate(recall = ifelse(im1 == 1, 0, 1)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(im1, im6, recall)
+
+mics4.ch.wm %>%  dplyr::mutate(recall = as.factor(recall)) -> mics4.ch.wm
+
+```
+
+
+
+##### hbv birth dose
+
+```{r hepb0_c}
+
+mics4.ch.wm %>% mutate(hepb0_c = if_else(im3h0d <= 31 & im3h0d >=1, 1,
+                                        if_else(im3h0d == 0, 0,
+                                        if_else(im3h0d == 44, 44, 
+                                        if_else(im3h0d == 66, 66, 99))))) -> mics4.ch.wm
+
+
+mics4.ch.wm %>% count(hepb0_c, im3h0d)
+# if date is there = 1
+# marked on card = 44
+# mother reported = 66  # technically recall 
+# missing = 99
+# not given = 0
+
+# Need to change missing to "NA"
+
+# NA_NA needs to be replaced with NA
+mics4.ch.wm %>% naniar::replace_with_na(replace = list(hepb0_c = 99)) -> mics4.ch.wm
+mics4.ch.wm %>% count(hepb0_c)
+
+
+```
+
+
+```{r imh6h0_date}
+# Convert to numeric values: day/ month/ year
+mics4.ch.wm$im3h0d_2 <- as.numeric(mics4.ch.wm$im3h0d)
+mics4.ch.wm$im3h0m_2 <- as.numeric(mics4.ch.wm$im3h0m)
+mics4.ch.wm$im3h0y_2 <- as.numeric(mics4.ch.wm$im3h0y)
+
+# Now create the date
+mics4.ch.wm %>% mutate(im3h0_date = make_date(im3h0y_2, im3h0m_2, im3h0d_2)) -> mics4.ch.wm
+mics4.ch.wm %>% count(im3h0_date) # looks ok
+
+```
+
+
+```{r im3h0_time}
+
+# Are there some children without a birthdate?
+# The time since vaccination will be calculated based on birthdate and data of vaccination
+mics4.ch.wm %>% filter(hepb0_c == 1) %>% summarise(count=sum(is.na(dob_ch))) # 38
+
+
+# Time since vaccination
+mics4.ch.wm$im3h0_time <- as.numeric(difftime(mics4.ch.wm$im3h0_date, 
+                                           mics4.ch.wm$dob_ch, units = "days"))
+summary(mics4.ch.wm$im3h0_time)
+# Negative values would indicate mistakes in dob or date of vaccination
+
+# how many children have negative values?
+mics4.ch.wm %>% count(im3h0_time) # a lot?
+mics4.ch.wm %>% filter(im3h0_time <0) # 117
+117/11258 # 1%
+
+```
+
+
+```{r hepb0_c24}
+# Card: vaccinated within 24 hours
+mics4.ch.wm %>% 
+  mutate(hepb0_c24 = ifelse(im3h0_time == 0, 0, 
+                     ifelse(im3h0_time == 1, 1, 2))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(hepb0_c24)
+
+#### Does not include those without a birth date; for which this could not be calculated
+
+```
+
+
+```{r hepb0_c_2}
+
+mics4.ch.wm %>% count(hepb0_c, hepb0_c24)
+
+# combination of card within 24 hours and card date variable
+mics4.ch.wm %>% 
+  unite(hepb0_c_2, c(hepb0_c, hepb0_c24), sep = "_", remove = FALSE, na.rm = FALSE) -> mics4.ch.wm
+mics4.ch.wm %>% count(hepb0_c_2)
+# 0_NA	1874			# no
+# 1_0	  863		    # yes, same day	
+# 1_1	  229			  # yes, one day after
+# 1_2	  818		    # yes, later
+# 1_NA	38			  # ppl without dob
+# 44_NA	217		    # yes, marked on card	
+# 66_NA	194		    # yes, but mother's recall	
+# NA_NA	7020      # NA
+
+
+# NA_NA needs to be replaced with NA
+mics4.ch.wm %>% naniar::replace_with_na(replace = list(hepb0_c_2 = "NA_NA")) -> mics4.ch.wm
+mics4.ch.wm %>% count(hepb0_c_2)
+# Now combine recall and info from card
+
+```
+
+
+```{r hepb0_c_3}
+
+# Need to recode
+
+# 1_NA	     these two categories mean that we dont know when they were vaccinated
+# 44_NA 
+
+# 0_NA   # C_0     # card: no
+# 1_0    # C_1_0   # card: yes, same day	
+# 1_1    # C_1_1   # card: yes, one day after
+# 1_2    # C_1_2   # card: yes, later
+# 1_NA   # C_1_3   # card: yes, no date
+# 44_NA  # C_1_3   # card: yes, no date
+# 66_NA  # C_2     # technically recall 
+# 99_NA  # C_3     # should be NA
+
+mics4.ch.wm %>% 
+  mutate(hepb0_c_3 = ifelse(hepb0_c_2 == "0_NA", "C_0", 
+                     ifelse(hepb0_c_2 == "1_0", "C_1_0", 
+                     ifelse(hepb0_c_2 == "1_1", "C_1_1",
+                     ifelse(hepb0_c_2 == "1_2", "C_1_2",
+                     ifelse(hepb0_c_2 == "1_NA", "C_1_3",
+                     ifelse(hepb0_c_2 == "44_NA", "C_1_3", 
+                     ifelse(hepb0_c_2 == "66_NA", "C_2", " ")))))))) -> mics4.ch.wm
+ 
+mics4.ch.wm %>% count(hepb0_c_2, hepb0_c_3)
+
+```
+
+
+```{r im13 im14 im15}
+
+# If im6 was responded with "1": questions recall vaccinations were asked
+
+# Child ever given Hepatitis B vaccination
+mics4.ch.wm %>% count(recall, im6, im13)
+
+# Hepatitis B first given within 24 h after birth or later
+mics4.ch.wm %>% count(recall, im6, im14)
+
+
+# Times child given Hepatitis B vaccination
+mics4.ch.wm %>% count(im15)
+
+mics4.ch.wm %>% count(im13, im14)
+
+
+mics4.ch.wm %>% count(im13, im14, im15)
+
+```
+
+
+```{r hepb0_r}
+# we want to keep the variables as consistent as possible between 2017 and 2012
+# R_1	within 24 hours
+# R_2	yes, later
+# R_0	no
+# R_3	don't know / no response (missing???)
+
+######################### 9 should be "NA"
+
+
+mics4.ch.wm %>% count(im14)
+
+mics4.ch.wm %>% 
+  dplyr::mutate(hepb0_r = ifelse(im14 == 1 & im13 == 1, "R_1", 
+                          ifelse(im14 == 2 & im13 == 1, "R_2", 
+                          ifelse(im14 == 9 & im13 == 1, "R_3",
+                          ifelse(im13 == 2, "R_0",
+                          ifelse(im13 == 8, "R_3",
+                          ifelse(im13 == 9, "R_3", " "))))))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(im13, im14, hepb0_r)
+
+# C_2 should not be from the card -> should be based on recall
+
+# It is not yet correct
+# In IM6; if all responses were "NO"; there was no probing for the recall of vaccinations
+# Therefore; some of the NAs in the new variable need to be changed to "No" or "DK"
+
+
+mics4.ch.wm %>% 
+  mutate(hepb0_r = replace(hepb0_r, is.na(hepb0_r) & im6 == 2, "R_0"))  %>%
+  mutate(hepb0_r = replace(hepb0_r, is.na(hepb0_r) & im6 == 8, "R_3")) %>% 
+  mutate(hepb0_r = replace(hepb0_r, is.na(hepb0_r) & im6 == 9, "R_3")) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(recall, hepb0_r, im5, im6)
+
+```
+
+
+```{r hepb0_rc}
+
+mics4.ch.wm %>% count(hepb0_c_3, hepb0_r)
+mics4.ch.wm %>% mutate(hepb0_rc = coalesce(hepb0_r, hepb0_c_3)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(hepb0_c_3, hepb0_r, hepb0_rc)
+
+```
+
+
+```{r hepb0_rc_2}
+
+mics4.ch.wm %>% count(hepb0_rc)
+
+# hepatitis B birth dose (yes, no)
+# DK will be grouped with no # NO RESPONSE will be grouped with no
+# vaccination received; Within 24 hours or the next day, or later: 1
+# no vaccination: 0
+mics4.ch.wm %>% 
+  mutate(hepb0_rc_2 = dplyr::recode(hepb0_rc,
+                           "C_0" = 0,
+                           "C_1_0" = 1,
+                           "C_1_1" = 1,
+                           "C_1_2" = 1,
+                           "C_1_3" = 1,
+                           "C_2" = 1,
+                           "C_3" = 0,
+                           "R_0" = 0,
+                           "R_1" = 1,
+                           "R_2" = 1,
+                           "R_3" = 0)) -> mics4.ch.wm
+mics4.ch.wm %>% count(hepb0_rc_2, hepb0_rc)
+
+# 2015 NAs
+mics4.ch.wm %>% count(hepb0_rc_2) 
+
+mics4.ch.wm %>% count(ag2, hepb0_rc_2) 
+
+mics4.ch.wm %>% count(uf9, hepb0_rc_2)
+
+##### I guess, there are just not answered 
+##### Different to the 2017 dataset
+
+```
+
+
+```{r hepb0_rc_3}
+
+mics4.ch.wm %>% mutate(hepb0_rc_3 = ifelse(hepb0_rc == "C_2", "R_2", hepb0_rc)) -> mics4.ch.wm
+mics4.ch.wm %>% count(hepb0_c, hepb0_rc, hepb0_rc_3) 
+
+```
+
+
+```{r im11 dtp}
+
+# child ever given DTP vaccination
+
+mics4.ch.wm %>% count(recall, im6, im11)
+
+mics4.ch.wm %>% count(im11, im13)
+
+mics4.ch.wm %>% count(im11, im12, im13)
+
+```
+
+
+```{r im13 im14 im15}
+
+# Should I assume that hepatitis B birth dose is counted in im15 or not??
+
+mics4.ch.wm %>% count(im13, im14, im15)
+
+mics4.ch.wm %>% filter(cage_11 == 2) %>% count(im13, im14, im15)
+
+```
+
+
+```{r penta_r}
+
+# This variable cannot be grouped as in the 2017 analysis
+
+mics4.ch.wm %>% mutate(penta_r = ifelse(im13 == 1 & im14 == 1 & im15 == 1, 1,
+                              ifelse(im13 == 1 & im14 == 1 & im15 == 2, 2,
+                              ifelse(im13 == 1 & im14 == 1 & im15 == 3, 3,
+                              ifelse(im13 == 1 & im14 == 1 & im15 == 4, 4,
+                              ifelse(im13 == 1 & im14 == 1 & im15 == 5, 4,
+                              ifelse(im13 == 1 & im14 == 1 & im15 == 9, 1,
+                              ifelse(im13 == 1 & im14 == 2 & im15 == 1, 1,
+                              ifelse(im13 == 1 & im14 == 2 & im15 == 2, 2,
+                              ifelse(im13 == 1 & im14 == 2 & im15 == 3, 3,
+                              ifelse(im13 == 1 & im14 == 2 & im15 == 4, 4,
+                              ifelse(im13 == 1 & im14 == 2 & im15 == 5, 4,
+                              ifelse(im13 == 1 & im14 == 2 & im15 == 6, 4,
+                              ifelse(im13 == 1 & im14 == 2 & im15 == 9, 1,
+                              ifelse(im13 == 1 & im14 == 9 & im15 == 1, 2,
+                              ifelse(im13 == 1 & im14 == 9 & im15 == 3, 4,
+                              ifelse(im13 == 1 & im14 == 9 & im15 == 9, 5,
+                              ifelse(im13 == 2 & is.na(im14) & is.na(im15), 0,
+                              ifelse(im13 == 8 & is.na(im14) & is.na(im15), 6,
+                              ifelse(im13 == 9 & is.na(im14) & is.na(im15), NA, " "
+                                     )))))))))))))))))))) -> mics4.ch.wm
+  
+
+mics4.ch.wm %>% count(im13, im14, im15, penta_r) # ok, the numbers match
+
+mics4.ch.wm %>% count(penta_r)
+                                     
+
+```
+
+
+
+
+##### penta dose 1
+
+
+```{r penta1_c}
+
+mics4.ch.wm %>% mutate(penta1_c = if_else(im3h1d <= 31 & im3h1d >=1, 1,
+                               if_else(im3h1d == 0, 0,
+                               if_else(im3h1d == 44, 44, 66)))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta1_c)
+# if date is there = 1
+# marked on card = 44
+# mother reported = 66  # technically recall 
+# not given = 0
+
+```
+
+
+```{r penta1_date}
+# Date              
+# NOT GIVEN         
+# MARKED ON CARD    
+# MOTHER REPORTED   
+# Inconsistent      
+# NO RESPONSE       
+
+# Convert to numeric values: day/ month/ year
+mics4.ch.wm$im3h1d_2 <- as.numeric(mics4.ch.wm$im3h1d)
+mics4.ch.wm$im3h1m_2 <- as.numeric(mics4.ch.wm$im3h1m)
+mics4.ch.wm$im3h1y_2 <- as.numeric(mics4.ch.wm$im3h1y)
+
+# Now create the date
+mics4.ch.wm %>% mutate(penta1_date = make_date(im3h1y_2, im3h1m_2, im3h1d_2)) -> mics4.ch.wm
+mics4.ch.wm %>% count(penta1_date) # looks ok
+
+```
+
+
+```{r penta1_time}
+
+# Are there some children without a birthdate?
+# The time since vaccination will be calculated based on birthdate and data of vaccination
+mics4.ch.wm %>% filter(penta1_c == 1) %>% summarise(count=sum(is.na(dob_ch))) # 3
+
+
+# Time since vaccination
+mics4.ch.wm$penta1_time <- as.numeric(difftime(mics4.ch.wm$penta1_date, 
+                                            mics4.ch.wm$dob_ch, units = "days"))
+summary(mics4.ch.wm$penta1_time)
+# Comments on time since vaccination:
+# negative values! negative values would indicate mistakes in dob or date of vaccination
+
+```
+
+
+```{r penta1_c_2}
+
+mics4.ch.wm %>% count(penta1_c)
+# 66 needs to be replaced with NA because this is recall info and not card info
+
+mics4.ch.wm$penta1_c_2 <- mics4.ch.wm$penta1_c
+mics4.ch.wm %>% replace_with_na(replace = list(penta1_c_2 = "66")) -> mics4.ch.wm
+mics4.ch.wm %>% count(penta1_c_2)
+
+```
+
+
+```{r penta1_c_3}
+
+mics4.ch.wm %>% mutate(penta1_c_3 = ifelse(penta1_c == 0, "C_0",
+                                 ifelse(penta1_c == 1, "C_1",
+                                 ifelse(penta1_c == 44, "C_44", "C_66")))) -> mics4.ch.wm
+
+
+mics4.ch.wm %>% count(penta1_c, penta1_c_3)
+
+```
+
+
+```{r penta1_r}
+# given penta 1; excluding birthdose
+
+mics4.ch.wm %>% mutate(penta1_r = ifelse(penta_r == 2, "R_1",
+                               ifelse(penta_r == 3, "R_1", 
+                               ifelse(penta_r == 4, "R_1",
+                               ifelse(penta_r == 5, "R_8",
+                               ifelse(penta_r == 6, "R_8", "R_0")))))) -> mics4.ch.wm
+mics4.ch.wm %>% count(penta_r, penta1_r)
+mics4.ch.wm %>% count(penta1_r)
+
+# same issue again: participants with "2" in im6 -> unvaccinated, recall
+mics4.ch.wm %>% 
+  mutate(penta1_r = replace(penta1_r, is.na(penta1_r) & im6 == 2, "R_0"))  %>%
+  mutate(penta1_r = replace(penta1_r, is.na(penta1_r) & im6 == 8, "R_8")) %>% 
+  mutate(penta1_r = replace(penta1_r, is.na(penta1_r) & im6 == 9, "R_8")) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta1_r, penta1_c, im6)
+
+```
+
+
+```{r penta1_rc}
+
+mics4.ch.wm %>% count(penta1_c_3, penta1_r)
+mics4.ch.wm %>% mutate(penta1_rc = coalesce(penta1_c_3, penta1_r)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta1_c_3, penta1_r, penta1_rc)
+
+```
+
+
+```{r penta1_rc_2}
+
+mics4.ch.wm %>% 
+  mutate(penta1_rc_2 = ifelse(penta1_rc == "C_66", "R_1", penta1_rc)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta1_rc_2, penta1_rc) # looks ok
+
+mics4.ch.wm %>% count(penta1_rc)
+
+```
+
+
+```{r penta1_rc_3}
+
+# penta dose 1 (yes, no)
+# DK will be grouped with no # NO RESPONSE will be grouped with no
+# vaccination received; 1
+# no vaccination: 0
+mics4.ch.wm %>% 
+  mutate(penta1_rc_3 = dplyr::recode(penta1_rc_2,
+                           "C_0" = 0,
+                           "C_1" = 1,
+                           "C_44" = 1,
+                           "R_0" = 0,
+                           "R_1" = 1,
+                           "R_8" = 0)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta1_rc_3, penta1_rc_2)
+mics4.ch.wm %>% count(penta1_rc_3)
+
+```
+
+
+
+
+##### penta dose 2
+
+
+```{r penta2_c}
+
+mics4.ch.wm %>% mutate(penta2_c = if_else(im3h2d <= 31 & im3h2d >=1, 1,
+                               if_else(im3h2d == 0, 0,
+                               if_else(im3h2d == 44, 44, 66)))) -> mics4.ch.wm
+mics4.ch.wm %>% count(penta2_c)
+# if date is there = 1
+# marked on card = 44
+# mother reported = 66  # technically recall 
+# not given = 0
+
+```
+
+
+```{r penta2_date}
+# Date              
+# NOT GIVEN         
+# MARKED ON CARD    
+# MOTHER REPORTED   
+# Inconsistent      
+# NO RESPONSE       
+
+# Convert to numeric values: day/ month/ year
+mics4.ch.wm$im3h2d_2 <- as.numeric(mics4.ch.wm$im3h2d)
+mics4.ch.wm$im3h2m_2 <- as.numeric(mics4.ch.wm$im3h2m)
+mics4.ch.wm$im3h2y_2 <- as.numeric(mics4.ch.wm$im3h2y)
+
+# Now create the date
+mics4.ch.wm %>% mutate(penta2_date = make_date(im3h2y_2, im3h2m_2, im3h2d_2)) -> mics4.ch.wm
+mics4.ch.wm %>% count(penta2_date) # looks ok
+
+```
+
+
+```{r penta2_time}
+
+# Are there some children without a birthdate?
+# The time since vaccination will be calculated based on birthdate and data of vaccination
+mics4.ch.wm %>% filter(penta2_c == 1) %>% summarise(count=sum(is.na(dob_ch))) # 100
+
+
+# Time since vaccination
+mics4.ch.wm$penta2_time <- as.numeric(difftime(mics4.ch.wm$penta2_date, 
+                                            mics4.ch.wm$dob_ch, units = "days"))
+summary(mics4.ch.wm$penta2_time)
+# Comments on time since vaccination:
+# negative values! negative values would indicate mistakes in dob or date of vaccination
+
+```
+
+
+```{r penta2_c_2}
+
+mics4.ch.wm %>% count(penta2_c)
+# 66 needs to be replaced with NA because this is recall info and not card info
+
+mics4.ch.wm$penta2_c_2 <- mics4.ch.wm$penta2_c
+mics4.ch.wm %>% replace_with_na(replace = list(penta2_c_2 = "66")) -> mics4.ch.wm
+mics4.ch.wm %>% count(penta2_c_2)
+
+```
+
+
+```{r penta2_c_3}
+
+mics4.ch.wm %>% mutate(penta2_c_3 = ifelse(penta2_c == 0, "C_0",
+                                 ifelse(penta2_c == 1, "C_1",
+                                 ifelse(penta2_c == 44, "C_44", "C_66")))) -> mics4.ch.wm
+
+
+mics4.ch.wm %>% count(penta2_c, penta2_c_3)
+
+```
+
+
+```{r penta2_r}
+# given penta 2; excluding birthdose
+
+mics4.ch.wm %>% mutate(penta2_r = ifelse(penta_r == 3, "R_1", 
+                               ifelse(penta_r == 4, "R_1",
+                               ifelse(penta_r == 5, "R_8",
+                               ifelse(penta_r == 6, "R_8", "R_0"))))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta_r, penta2_r)
+mics4.ch.wm %>% count(penta2_r)
+
+
+mics4.ch.wm %>% count(penta2_r, im6)
+
+mics4.ch.wm %>% 
+  mutate(penta2_r = replace(penta2_r, is.na(penta2_r) & im6 == 2, "R_0"))  %>%
+  mutate(penta2_r = replace(penta2_r, is.na(penta2_r) & im6 == 8, "R_8")) %>% 
+  mutate(penta2_r = replace(penta2_r, is.na(penta2_r) & im6 == 9, "R_8")) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta2_r, im6)
+
+```
+
+
+```{r penta2_rc}
+
+mics4.ch.wm %>% count(penta2_c_3, penta2_r)
+mics4.ch.wm %>% mutate(penta2_rc = coalesce(penta2_c_3, penta2_r)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta2_c_3, penta2_r, penta2_rc)
+
+```
+
+
+```{r penta2_rc_2}
+
+mics4.ch.wm %>% 
+  mutate(penta2_rc_2 = ifelse(penta2_rc == "C_66", "R_1", penta2_rc)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta2_rc_2, penta2_rc)
+
+mics4.ch.wm %>% count(penta2_rc_2)
+
+```
+
+
+```{r penta2_rc_3}
+
+# penta dose 1 (yes, no)
+# DK will be grouped with no # NO RESPONSE will be grouped with no
+# vaccination received; 1
+# no vaccination: 0
+mics4.ch.wm %>% 
+  mutate(penta2_rc_3 = dplyr::recode(penta2_rc_2,
+                           "C_0" = 0,
+                           "C_1" = 1,
+                           "C_44" = 1,
+                           "R_0" = 0,
+                           "R_1" = 1,
+                           "R_8" = 0)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta2_rc_3, penta2_rc_2)
+mics4.ch.wm %>% count(penta2_rc_3)
+
+```
+
+
+
+
+##### penta dose 3
+
+```{r penta3_c}
+
+mics4.ch.wm %>% mutate(penta3_c = if_else(im3h3d <= 31 & im3h3d >=1, 1,
+                               if_else(im3h3d == 0, 0,
+                               if_else(im3h3d == 44, 44, 66)))) -> mics4.ch.wm
+mics4.ch.wm %>% count(penta3_c)
+# if date is there = 1
+# marked on card = 44
+# mother reported = 66  # technically recall 
+# not given = 0
+
+```
+
+
+```{r penta3_date}
+# Date              
+# NOT GIVEN         
+# MARKED ON CARD    
+# MOTHER REPORTED   
+# Inconsistent      
+# NO RESPONSE       
+
+# Convert to numeric values: day/ month/ year
+mics4.ch.wm$im3h3d_2 <- as.numeric(mics4.ch.wm$im3h3d)
+mics4.ch.wm$im3h3m_2 <- as.numeric(mics4.ch.wm$im3h3m)
+mics4.ch.wm$im3h3y_2 <- as.numeric(mics4.ch.wm$im3h3y)
+
+# Now create the date
+mics4.ch.wm %>% mutate(penta3_date = make_date(im3h3y_2, im3h3m_2, im3h3d_2)) -> mics4.ch.wm
+mics4.ch.wm %>% count(penta3_date) # looks ok
+
+```
+
+
+```{r penta3_c_2}
+
+mics4.ch.wm %>% count(penta3_c)
+# 66 needs to be replaced with NA because this is recall info and not card info
+
+mics4.ch.wm$penta3_c_2 <- mics4.ch.wm$penta3_c
+mics4.ch.wm %>% replace_with_na(replace = list(penta3_c_2 = "66")) -> mics4.ch.wm
+mics4.ch.wm %>% count(penta3_c_2)
+
+```
+
+
+```{r penta3_c_3}
+
+mics4.ch.wm %>% mutate(penta3_c_3 = ifelse(penta3_c == 0, "C_0",
+                                 ifelse(penta3_c == 1, "C_1",
+                                 ifelse(penta3_c == 44, "C_44", "C_66")))) -> mics4.ch.wm
+
+
+mics4.ch.wm %>% count(penta3_c, penta3_c_3)
+
+```
+
+
+```{r penta3_r}
+# given penta 3; excluding birthdose
+mics4.ch.wm %>% mutate(penta3_r = ifelse(penta_r == 4, "R_1",
+                               ifelse(penta_r == 5, "R_8",
+                               ifelse(penta_r == 6, "R_8", "R_0")))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta_r, penta3_r)
+mics4.ch.wm %>% count(penta3_r)
+
+
+mics4.ch.wm %>% 
+  mutate(penta3_r = replace(penta3_r, is.na(penta3_r) & im6 == 2, "R_0"))  %>%
+  mutate(penta3_r = replace(penta3_r, is.na(penta3_r) & im6 == 8, "R_8")) %>% 
+  mutate(penta3_r = replace(penta3_r, is.na(penta3_r) & im6 == 9, "R_8")) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta3_r, im6)
+
+
+```
+
+
+```{r penta3_rc}
+
+mics4.ch.wm %>% count(penta3_c_3, penta3_r)
+mics4.ch.wm %>% mutate(penta3_rc = coalesce(penta3_c_3, penta3_r)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta3_c_3, penta3_r, penta3_rc)
+
+```
+
+
+```{r penta3_rc_2}
+
+mics4.ch.wm %>% 
+  mutate(penta3_rc_2 = ifelse(penta3_rc == "C_66", "R_1", penta3_rc)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta3_rc_2, penta3_rc) 
+
+mics4.ch.wm %>% count(penta3_rc_2)
+
+```
+
+
+```{r penta3_rc_3}
+
+# penta dose 1 (yes, no)
+# DK will be grouped with no # NO RESPONSE will be grouped with no
+# vaccination received; 1
+# no vaccination: 0
+mics4.ch.wm %>% 
+  mutate(penta3_rc_3 = dplyr::recode(penta3_rc_2,
+                           "C_0" = 0,
+                           "C_1" = 1,
+                           "C_44" = 1,
+                           "R_0" = 0,
+                           "R_1" = 1,
+                           "R_8" = 0)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta3_rc_3, penta3_rc_2)
+mics4.ch.wm %>% count(penta3_rc_3)
+
+```
+
+
+```{r penta doses}
+
+mics4.ch.wm %>% count(penta1_rc_3, penta2_rc_3, penta3_rc_3)
+
+# Variable for having received 3 doses of the pentavalent vaccine
+# vs less or no doses
+
+# Penta 3 doses vs less than three doses
+mics4.ch.wm %>% 
+  mutate(penta_3_doses = ifelse((penta1_rc_3 == 1 &
+                                penta2_rc_3 == 1 &
+                                penta3_rc_3 == 1), 1,0)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(penta1_rc_3, penta2_rc_3, penta3_rc_3, penta_3_doses) # is ok
+
+
+
+mics4.ch.wm %>% count(penta_3_doses)
+
+
+# what about the recall?
+
+mics4.ch.wm %>% group_by(recall) %>% count(penta_3_doses)
+# subset those aged 0 to 2, with mothers anc data
+mics4.ch.wm %>% filter(ag2 >=1 & ag2 <3 & cm13 == "Y") %>% group_by(recall) %>% count(penta_3_doses) # is ok
+
+```
+
+
+```{r penta doses dtp}
+
+mics4.ch.wm %>% count(im11, im12, im13, penta_3_doses)
+
+mics4.ch.wm %>% count(im11, im12, penta_3_doses)
+
+mics4.ch.wm %>% filter(recall == 1) %>% count(im11, penta_3_doses)
+
+```
+
+
+##### dtp & penta combined
+
+
+```{r dtp recall}
+
+mics4.ch.wm %>% count(im11, im12)
+
+
+mics4.ch.wm %>% mutate(dtp_r = ifelse(im11 == 1 & im12 == 1, 1,
+                                 ifelse(im11 == 1 & im12 == 2, 2,
+                                 ifelse(im11 == 1 & im12 == 3, 3,
+                                 ifelse(im11 == 1 & im12 == 4, 4,
+                                 ifelse(im11 == 1 & im12 == 5, 5,
+                                 ifelse(im11 == 1 & im12 == 6, 6,
+                                 ifelse(im11 == 1 & im12 == 7, 7,
+                                 ifelse(im11 == 1 & im12 == 9, 8,
+                                 ifelse(im11 == 2 & is.na(im12), 0,
+                                 ifelse(im11 == 8 & is.na(im12), 9,
+                                 ifelse(im11 == 9 & is.na(im12), NA,
+                                 ifelse(is.na(im11) & is.na(im12), NA, " "))))))))))))) -> mics4.ch.wm
+
+  
+mics4.ch.wm %>% count(im11, im12, dtp_r)
+
+# at least 3x DTP according to recall
+
+mics4.ch.wm %>% mutate(dtp_r_3x = ifelse(dtp_r == 1, 0,
+                                  ifelse(dtp_r == 2, 0,
+                                  ifelse(dtp_r == 3, 1,
+                                  ifelse(dtp_r == 4, 1,
+                                  ifelse(dtp_r == 5, 1, 
+                                  ifelse(dtp_r == 6, 1,
+                                  ifelse(dtp_r == 7, 1,
+                                  ifelse(dtp_r == 8, 0, 0
+                                         ))))))))) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(dtp_r, dtp_r_3x)
+
+mics4.ch.wm %>% count(dtp_r_3x)
+
+
+```
+
+
+```{r penta and dtp}
+
+mics4.ch.wm %>% count(dtp_r_3x, penta_3_doses)
+
+
+##### New variable
+##### all participants who (in recall) stated that the child received the DTP vaccine will be considered as if they had received the pentavalent vaccine -> reason is: pentavalent vaccine was introduced in Lao PDR in 2009
+##### And the tetravalent vaccine was there even before
+##### so DTP vaccine (in recall) will be considered a proxy
+##### Also mothers likely don't distinguish between the different vaccines at the same time point (recall is said to be very unreliable)
+
+
+
+mics4.ch.wm %>% count(dtp_r_3x, penta_3_doses)
+
+class(mics4.ch.wm$dtp_r_3x) # num
+class(mics4.ch.wm$penta_3_doses) # num
+
+
+mics4.ch.wm %>% mutate(penta_dtp = ifelse(dtp_r_3x == 1 & penta_3_doses == 0, 1, penta_3_doses)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(dtp_r_3x, penta_3_doses, penta_dtp)
+#### need to correct one position
+
+mics4.ch.wm %>% mutate(penta_dtp = replace(penta_dtp, is.na(penta_dtp) & penta_3_doses == 0, 0)) %>% 
+  count(dtp_r_3x, penta_3_doses, penta_dtp) ### seems ok
+
+
+mics4.ch.wm %>% mutate(penta_dtp = replace(penta_dtp, is.na(penta_dtp) & penta_3_doses == 0, 0)) -> mics4.ch.wm
+
+mics4.ch.wm %>% count(dtp_r_3x, penta_3_doses, penta_dtp)
+
+mics4.ch.wm %>% count(penta_dtp)
+
+class(mics4.ch.wm$penta_3_doses) # numeric
+class(mics4.ch.wm$penta_dtp)     # numeric
+
+```
+
+
+
+
+
+
+
+
+#### convert variables classes (if needed)
+
+
+```{r convert to factor}
+
+mics4.ch.wm$hepb0_rc_2 <- as.factor(mics4.ch.wm$hepb0_rc_2)
+
+mics4.ch.wm$hh6 <- as.factor(mics4.ch.wm$hh6)
+
+mics4.ch.wm$hh7r <- as.factor(mics4.ch.wm$hh7r)
+
+mics4.ch.wm$hh7r_2 <- as.factor(mics4.ch.wm$hh7r_2)
+
+mics4.ch.wm$windex5 <- as.factor(mics4.ch.wm$windex5)
+
+mics4.ch.wm$hl4 <- as.factor(mics4.ch.wm$hl4)
+
+mics4.ch.wm$ethnicity <- as.factor(mics4.ch.wm$ethnicity)
+
+mics4.ch.wm$ethnicity_r <- as.factor(mics4.ch.wm$ethnicity_r)
+
+mics4.ch.wm$ethnicity_r_2 <- as.factor(mics4.ch.wm$ethnicity_r_2)
+
+mics4.ch.wm$lang <- as.factor(mics4.ch.wm$lang)
+
+mics4.ch.wm$lang_r <- as.factor(mics4.ch.wm$lang_r)
+
+mics4.ch.wm$lang_r_2 <- as.factor(mics4.ch.wm$lang_r_2)
+
+mics4.ch.wm$melevel <- as.factor(mics4.ch.wm$melevel)
+
+mics4.ch.wm$pob <- as.factor(mics4.ch.wm$pob)
+
+mics4.ch.wm$pob_2 <- as.factor(mics4.ch.wm$pob_2)
+
+mics4.ch.wm$pob_3 <- as.factor(mics4.ch.wm$pob_3)
+
+mics4.ch.wm$mn1 <- as.factor(mics4.ch.wm$mn1)
+
+mics4.ch.wm$melevel_r <- as.factor(mics4.ch.wm$melevel_r)
+
+mics4.ch.wm$melevel_r_2 <- as.factor(mics4.ch.wm$melevel_r_2)
+
+mics4.ch.wm$mn1_mn3 <- as.factor(mics4.ch.wm$mn1_mn3)
+
+mics4.ch.wm$ag2_2 <- as.factor(mics4.ch.wm$ag2_2)
+
+mics4.ch.wm$ag2_3 <- as.factor(mics4.ch.wm$ag2_3)
+
+mics4.ch.wm$windex5_2 <- as.factor(mics4.ch.wm$windex5_2)
+
+mics4.ch.wm$windex5_3 <- as.factor(mics4.ch.wm$windex5_3)
+
+mics4.ch.wm$hh6a <- as.factor(mics4.ch.wm$hh6a)
+
+mics4.ch.wm$mn17_all_1 <- as.factor(mics4.ch.wm$mn17_all_1)
+
+mics4.ch.wm$penta_3_doses <- as.factor(mics4.ch.wm$penta_3_doses)
+
+mics4.ch.wm$penta_dtp <- as.factor(mics4.ch.wm$penta_dtp)
+
+```
+
+
+
+
+
+
+
+
+### data analysis
+
+
+#### subset mics4.ch.wm_b1_anc: factors associated with hepatitis b birth dose
+
+
+##### subset
+
+```{r subset for birth dose analysis with anc data}
+
+#subset children under 3
+mics4.ch.wm %>% filter(ag2 < 3) -> mics4.ch.wm_b1   # 6573 participants
+
+# remove those children for which there is no mother OR for which there is no ANC data
+# ANC questions were only asked to mothers who had a live birth in the last two years
+mics4.ch.wm_b1 %>% filter(cm13 == "Y") -> mics4.ch.wm_b1_anc   # 4846 participants
+
+mics4.ch.wm %>% filter(ag2 < 3) %>% count(cm13, mn1)
+mics4.ch.wm_b1_anc %>% count(cm13, mn1)
+# Now the data should be from all the mothers who had a live birth within the last two years
+
+
+# how many participants are still from the same household?
+mics4.ch.wm_b1_anc %>% group_by(hh_id) %>% filter(n()>1) %>% summarize(n=n()) # 701 obs
+701/4846 # 14.5% # calculated for all children under 3
+
+```
+
+
+
+##### define survey design
+
+```{r survey design}
+
+# How many clusters:
+
+# Provinces are strata
+mics4.ch.wm %>% summarize(n_clusters = n_distinct(hh7, hh1))
+# 998
+mics4.ch.wm %>% summarize(n_clusters = n_distinct(strata, hh1))
+# 998 # same
+
+
+# create variable domain
+mics4.ch.wm %>% mutate(domain_b = ag2 < 3 & cm13 == "Y") -> mics4.ch.wm
+mics4.ch.wm %>% count(domain_b) # 4846	
+
+
+# first, create the design for the entire dataset
+mics4.ch.wm_design <- svydesign(data = mics4.ch.wm,
+                                weights = ~chweight,
+                                id = ~strata+hh1)
+mics4.ch.wm_design
+
+# now subset with the domain variable
+mics4.ch.wm_design_subset_b <- subset(mics4.ch.wm_design, domain_b)
+mics4.ch.wm_design_subset_b
+
+```
+
+
+
+
+##### descriptive analysis
+
+```{r descriptive analysis table}
+
+mics4.ch.wm_design_subset_b %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                lang,
+                melevel,
+                mn18, 
+                mn1_mn3,
+                mn17_all_1,
+                ag2,
+                recall,
+                hepb0_rc_2,
+                hepb0_c,
+                hepb0_r), 
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics4_descriptive_ch_0-2.xlsx",
+                       borders = 0.4,
+                       open = interactive())
+
+```
+
+
+```{r numbers vaccination with birth dose}
+
+# numbers for descriptive table
+# vaccination with birth dose
+svytable(~hepb0_rc_2, design = mics4.ch.wm_design_subset_b)
+mics4.ch.wm_b1_anc %>% count(hepb0_rc_2)
+
+```
+
+
+```{r graphs for manuscript}
+
+# for the graph; the subset of all children 0 to 2 years (+ANC) will be representative
+# no need to do the same for the subset of children 1 to 2; will be almost same
+
+
+# Wealth index & area
+svytable(~windex5 + hh6, design = mics4.ch.wm_design_subset_b) -> tab
+tab <- as.data.frame(tab)
+ggplot(data = tab, mapping = aes(x=hh6, y=Freq, fill = windex5)) +
+  geom_col(position = "fill") +
+  xlab(" ") +
+  ylab("Proportion \n(weighted)")+
+  labs(fill = "Wealth index \nquintile") +
+  scale_x_discrete(labels = c("Urban", "Rural - \nwith road", "Rural - \nwithout road"))+
+  theme_bw() +
+  #ggtitle("Wealth index quintile by area") +
+  scale_fill_viridis(discrete = TRUE, labels = c("Poorest", "Second", "Middle", "Fourth", "Richest"))+
+  theme(text=element_text(size=14)) +
+  theme(axis.text.x = element_text(colour="black"), axis.text.y = element_text(colour="black")) -> A
+
+# Ethnicity by area
+svytable(~lang + hh6, design = mics4.ch.wm_design_subset_b) -> tab
+tab <- as.data.frame(tab)
+ggplot(data = tab, mapping = aes(x=hh6, y=Freq, fill = lang)) +
+  geom_col(position = "fill") +
+  xlab(" ") +
+  ylab("Proportion \n(weighted)")+
+  labs(fill = "Ethno-\nlinguistic \ngroup") +
+  scale_x_discrete(labels = c("Urban", "Rural - \nwith road", "Rural - \nwithout road"))+
+  theme_bw() +
+  #ggtitle("Ethno-linguistic group by area") +
+  scale_fill_viridis(discrete = TRUE, 
+                     labels = c("Lao-Tai",
+                                "Mon-Khmer",
+                                "Hmong-Mien",
+                                "Chinese-\nTibetan",
+                                "Other/DK/NA")) +
+  theme(text=element_text(size=14)) +
+  theme(axis.text.x = element_text(colour="black"), 
+        axis.text.y = element_text(colour="black")) -> B
+
+
+# place of delivery by area
+svytable(~pob + hh6, design = mics4.ch.wm_design_subset_b) -> tab
+tab <- as.data.frame(tab)
+ggplot(data = tab, mapping = aes(x=hh6, y=Freq, fill = pob)) +
+  geom_col(position = "fill") +
+  xlab(" ") +
+  ylab("Proportion \n(weighted)")+
+  labs(fill = "Place of \ndelivery") +
+  scale_x_discrete(labels = c("Urban", "Rural - \nwith road", "Rural - \nwithout road"))+
+  scale_fill_viridis(discrete = TRUE, labels = c("Home", "Public HCF", "Private HCF"))+
+  theme_bw() +
+  #ggtitle("Place of birth by area")+
+  theme(text=element_text(size=14)) +
+  theme(axis.text.x = element_text(colour="black"), axis.text.y = element_text(colour="black")) -> C
+
+ggarrange(A, B, C, 
+          nrow = 3,
+          labels = c("A", "B", "C")) -> fig
+annotate_figure(fig, top = text_grob("Survey 2011/12 \nChildren 0-2 years", color = "black", size = 14))
+
+ggsave("./graphs/mics4_fig_desc.png", last_plot(), height = 28, width = 16, units = "cm")
+
+
+
+```
+
+
+```{r graphs for the annex}
+
+# graphs for the annex
+
+# ethnicity by region
+svytable(~lang + hh7r_2, design = mics4.ch.wm_design_subset_b) -> tab
+tab <- as.data.frame(tab)
+ggplot(data = tab, mapping = aes(x=hh7r_2, y=Freq, fill = lang)) +
+  geom_col(position = "fill") +
+  xlab("Region") +
+  ylab("Proportion \n(weighted)")+
+  labs(fill = "Ethno-\nlinguistic \ngroup") +
+  scale_x_discrete(labels = c("Central", "North", "South"))+
+  theme_bw() +
+  ggtitle("Ethno-linguistic group of household head \nby region") +
+  scale_fill_viridis(discrete = TRUE, 
+                     labels = c("Lao-Tai",
+                                "Mon-Khmer",
+                                "Hmong-Mien",
+                                "Chinese-\nTibetan",
+                                "Other/DK/NA")) +
+  theme(text=element_text(size=14)) +
+  theme(axis.text.x = element_text(colour="black"), 
+        axis.text.y = element_text(colour="black")) -> A
+
+
+# assistance at delivery & pob
+svytable(~pob_2 + mn17_all_1, design = mics4.ch.wm_design_subset_b) -> tab
+tab <- as.data.frame(tab)
+ggplot(data = tab, mapping = aes(x = pob_2, y=Freq, fill = mn17_all_1)) +
+  geom_col(position = "fill") +
+  xlab("Place of delivery") +
+  ylab("Proportion \n(weighted)")+
+  labs(fill = "Assistance \nat delivery") +
+  scale_x_discrete(labels = c("At home", "Health \nCenter", "Gov. or priv. \nhospitals / clinics")) +
+  scale_fill_discrete(labels = c("Other person", "Health care professional"))+
+  theme_bw() +
+  ggtitle("Assistance at delivery by place of delivery") +
+  scale_fill_viridis(discrete = TRUE, 
+                     labels = c("Other person",
+                                "Health care \nprofessional")) +
+  theme(text=element_text(size=14)) +
+  theme(axis.text.x = element_text(colour="black"), 
+        axis.text.y = element_text(colour="black")) -> B
+
+
+ggarrange(A, B, 
+          nrow = 2,
+          labels = c("A", "B")) -> fig
+annotate_figure(fig, top = text_grob("Survey 2011/12 \nChildren 0-2 years", color = "black", size = 14))
+
+ggsave("./graphs/mics4_fig_desc_annex.png", last_plot(), height = 20, width = 15, units = "cm")
+
+
+```
+
+
+
+
+##### bivariate analysis
+
+
+```{r hepb0}
+
+# Looking at association between independent and dependent variables:
+# hh7r, HH6, windex5, HL4, ethnicity, melevel, PoB, MN2, ANC_W, ANC_T
+# Using design b1: first combination card and recall variable: hepb0_RC_2, hepb0_RC_24
+
+
+# H0: hepb0 coverage not associated with independent variable
+# H1: hepb0 coverage associated with independent variable
+svychisq(~hepb0_rc_2 + hh6, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") 
+
+svychisq(~hepb0_rc_2 + hh7r_2, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") # 0.1027
+
+svychisq(~hepb0_rc_2 + windex5, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq")
+svychisq(~hepb0_rc_2 + windex5_2, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq")
+svychisq(~hepb0_rc_2 + windex5_3, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq")
+
+svychisq(~hepb0_rc_2 + hl4, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") #ns # 0.3744
+
+svychisq(~hepb0_rc_2 + lang, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") 
+svychisq(~hepb0_rc_2 + lang_r_2, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") 
+svychisq(~hepb0_rc_2 + lang_r, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq")
+
+svychisq(~hepb0_rc_2 + melevel_r_2, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") 
+svychisq(~hepb0_rc_2 + melevel_r, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") 
+
+svychisq(~hepb0_rc_2 + pob, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") 
+svychisq(~hepb0_rc_2 + pob_2, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq")
+svychisq(~hepb0_rc_2 + pob_3, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq")
+
+svychisq(~hepb0_rc_2 + mn1_mn3, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") 
+svychisq(~hepb0_rc_2 + mn17_all_1, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq")
+
+svychisq(~hepb0_rc_2 + ag2, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq")  # 0.6475
+
+svychisq(~hepb0_rc_2 + recall, 
+         design = mics4.ch.wm_design_subset_b, statistic = "Chisq") # 0.192
+
+
+################################### Table for bivariate analysis
+
+# other info for table
+
+m1 <- svyglm(hepb0_rc_2 ~ hh6, design = mics4.ch.wm_design_subset_b, family = quasibinomial()) 
+m2 <- svyglm(hepb0_rc_2 ~ hh7r_2, design = mics4.ch.wm_design_subset_b, family = quasibinomial()) 
+m3 <- svyglm(hepb0_rc_2 ~ windex5_2, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+m4 <- svyglm(hepb0_rc_2 ~ hl4, design = mics4.ch.wm_design_subset_b, family = quasibinomial()) 
+m5 <- svyglm(hepb0_rc_2 ~ lang_r, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+m6 <- svyglm(hepb0_rc_2 ~ melevel_r, design = mics4.ch.wm_design_subset_b, family = quasibinomial()) 
+m7 <- svyglm(hepb0_rc_2 ~ pob_2, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+m8 <- svyglm(hepb0_rc_2 ~ mn1_mn3, design = mics4.ch.wm_design_subset_b, family = quasibinomial()) 
+m9 <- svyglm(hepb0_rc_2 ~ mn17_all_1, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+m10 <- svyglm(hepb0_rc_2 ~ factor(ag2), design = mics4.ch.wm_design_subset_b, family = quasibinomial()) 
+m11 <- svyglm(hepb0_rc_2 ~ ag2_2, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+
+
+#library(broom)
+
+tidy1 <- tidy(m1, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy2 <- tidy(m2, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy3 <- tidy(m3, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy4 <- tidy(m4, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy5 <- tidy(m5, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy6 <- tidy(m6, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy7 <- tidy(m7, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy8 <- tidy(m8, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy9 <- tidy(m9, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy10 <- tidy(m10, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy11 <- tidy(m11, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+
+tab <- bind_rows(tidy1, tidy2, tidy3, tidy4, tidy5, tidy6, tidy7, tidy8, tidy9, tidy10)
+
+write.csv(tab, "tables/mics4_biv_hepb0.csv", row.names = FALSE)
+
+
+```
+
+
+
+
+
+##### modelling in R
+
+Since adjusted odds ratios will be computed; all variables will be included in the model
+
+- hh6
+- hh7r_2
+- windex
+- hl4
+- lang
+- melevel
+- pob
+- mn1_mn3
+- mn17_all
+- age
+
+     
+     
+
+There are three options for the model in R:
+
+1. GLM
+2. GLM with weights (svyglm) (does not account for hierarchical structure of the data)
+3. Mixed model without survey weights (hierarchical logistic regression model)
+
+
+```{r glm}
+# Model glm
+mod1 <- glm(hepb0_rc_2 ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              lang_r +
+              melevel_r +
+              pob_2 +
+              mn1_mn3 +
+              mn17_all_1 +
+              ag2_3, data=mics4.ch.wm_b1_anc, family=binomial(link="logit"))
+summary(mod1)
+vif(mod1) #is ok
+
+```
+
+
+```{r svyglm}
+
+# GLM with survey weights
+mod2 <- svyglm(hepb0_rc_2 ~ hh6 + 
+                 hh7r_2+
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 pob_2 +
+                 mn1_mn3 +
+                 mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+summary(mod2)
+vif(mod2) # a lot of concern here
+# pob is an important variable; it should not so easily be removed
+
+
+# matrix
+# select the independent variables
+mics4.ch.wm_b1_anc %>% dplyr::select(hh6, hh7r_2, windex5_2, hl4, lang_r, melevel_r, pob_2, mn1_mn3, mn17_all_1, ag2_3) -> ind_var
+# create matrix
+model.matrix(~0+., data=ind_var) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+# so it is especially mn17_all_1 and pob_2 that are highly correlating
+
+
+
+mod2a <- svyglm(hepb0_rc_2 ~ hh6 + 
+                 #hh7r_2+
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 pob_2 +
+                 mn1_mn3 +
+                 mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+summary(mod2a)
+vif(mod2a) # it is worse
+
+
+mod2b <- svyglm(hepb0_rc_2 ~ hh6 + 
+                 hh7r_2+
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 pob_2 +
+                 mn1_mn3 +
+                 #mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+summary(mod2b)
+vif(mod2b) # it is better; region is still high
+
+
+mod2c <- svyglm(hepb0_rc_2 ~ hh6 + 
+                 #hh7r_2+
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 pob_2 +
+                 mn1_mn3 +
+                 #mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+summary(mod2c)
+vif(mod2c) # acceptable; although almost 11
+
+
+```
+
+
+```{r mixed model}
+
+# model seems the same; if I drop unused levels in age or not
+# droplevels(mics4.ch.wm_b1_anc$ag2_3)
+
+# Next, we set up the mixed model in which we account for the fact that there are some children from the same household
+# Including optimzer
+mod3 <- glmer(hepb0_rc_2 ~ hh6 + 
+                hh7r_2 +
+                windex5_2 +
+                hl4 +
+                lang_r +
+                melevel_r +
+                pob_2 +
+                mn1_mn3 +
+                mn17_all_1 + 
+                ag2_3 + (1 | hh_id), 
+            data=mics4.ch.wm_b1_anc, 
+            family=binomial(link="logit"),
+            glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+summary(mod3)
+
+anova(mod3, mod1) # yes; the mixed model is to be preferred over the glm
+
+summary(mod3)
+print(mod3, correlation = TRUE)
+
+vif(mod3) # all is ok
+
+
+
+
+### mixed model with the same variables as in logistic regression
+mod3a <- glmer(hepb0_rc_2 ~ hh6 + 
+              #hh7r_2 +
+              windex5_2 +
+              hl4 +
+              lang_r +
+              melevel_r +
+              pob_2 +
+              mn1_mn3 +
+              #mn17_all_1 + 
+              ag2_3 + (1 | hh_id), 
+            data=mics4.ch.wm_b1_anc, 
+            family=binomial(link="logit"),
+            glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+summary(mod3a)
+
+
+vif(mod3a) # all is ok
+
+
+```
+
+
+```{r model comparison}
+
+export_summs(mod1, mod2, mod2a, mod2b, mod2c, mod3, mod3a,
+             exp = TRUE, 
+             error_format = "[{conf.low}, {conf.high}], {p.value}", 
+             error_pos = c("right"), 
+             ci_level = 0.95, 
+             stars= NULL,
+             model.names = c("Logistic regression - mod1", 
+                             "Logistic regression \n (with survey weights) - mod2",
+                             "Logistic regression \n (with survey weights) - mod2a",
+                             "Logistic regression \n (with survey weights) - mod2b",
+                             "Logistic regression \n (with survey weights) - mod2c",
+                             "Mixed model \n (without survey weights) - mod3",
+                             "Mixed model \n (without survey weights) - mod3a"),
+             to.file = "xlsx", file.name = "./tables/mics4-models-b1.xlsx")
+
+# to.file = "xlsx", file.name = "./tables/mics4-models-b1.xlsx"
+# Include options if you want to print it to excel or word
+
+```
+
+
+
+
+
+
+
+
+
+#### subset mics4.ch.wm_p1_anc: factors associated with hepatitis b antigen containing vaccine
+
+
+##### subset
+
+```{r subset for analysis with anc data}
+
+#subset children under 3
+mics4.ch.wm %>% filter(ag2 > 0 & ag2 < 3) -> mics4.ch.wm_p1   # 4340 participants
+
+# remove those children for which there is no mother OR for which there is no ANC data
+# ANC questions were only asked to mothers who had a live birth in the last two years
+mics4.ch.wm_p1 %>% filter(cm13 == "Y") -> mics4.ch.wm_p1_anc   # 2678 participants
+
+```
+
+
+
+##### define survey design
+
+
+```{r subset survey design}
+
+# which children should be in the subset?
+# Children whose mothers provided the ANC data
+# children with vaccination history
+
+# create variable domain
+mics4.ch.wm %>% mutate(domain_p = ag2 > 0 & ag2 < 3 & cm13 == "Y") -> mics4.ch.wm
+mics4.ch.wm %>% count(domain_p)
+
+# survey design; including the variable "domain"
+## already defined above; but needs to include the domain variable
+mics4.ch.wm_design <- svydesign(data = mics4.ch.wm, 
+                                weights = ~chweight,
+                                id = ~strata+hh1)
+mics4.ch.wm_design
+
+# Subset of design
+mics4.ch.wm_design_subset_p <- subset(mics4.ch.wm_design, domain_p)
+mics4.ch.wm_design_subset_p
+
+```
+
+
+
+
+
+##### descriptive analysis
+
+
+```{r descriptive analysis table}
+
+mics4.ch.wm_design_subset_p %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                lang,
+                melevel,
+                mn18, 
+                mn1_mn3,
+                mn17_all_1,
+                ag2,
+                recall,
+                penta_3_doses,
+                penta_dtp), # should be already factor
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics4_descriptive_ch_1-2.xlsx",
+                       borders = 0.4,
+                       open = interactive())
+
+```
+
+
+```{r penta_dtp}
+
+# check if there are NAs here
+mics4.ch.wm_p1_anc %>% count(penta_dtp) # yes
+
+svytable(~recall + penta_dtp, design = mics4.ch.wm_design_subset_p) -> tab
+tab <- as.data.frame(tab)
+tab
+
+
+mics4.ch.wm_design_subset_p %>% 
+  gtsummary::tbl_svysummary(
+    include = c(penta_3_doses,
+                penta_dtp), # should be already factor
+    by="recall",
+        digits = (all_categorical() ~ c(2))
+  )
+
+```
+
+
+
+##### bivariate analysis
+
+
+```{r penta_dtp}
+
+# Looking at association between independent and dependent variables:
+# hh7r, HH6, windex5, HL4, ethnicity, melevel, PoB, MN2, ANC_W, ANC_T
+
+
+
+# H0: hepb0 coverage not associated with independent variable
+# H1: hepb0 coverage associated with independent variable
+svychisq(~penta_dtp + hh6, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") 
+
+svychisq(~penta_dtp + hh7r, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") # NS
+svychisq(~penta_dtp + hh7r_2, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") # NS
+
+svychisq(~penta_dtp + windex5, design = mics4.ch.wm_design_subset_p, statistic = "Chisq")
+svychisq(~penta_dtp + windex5_2, design = mics4.ch.wm_design_subset_p, statistic = "Chisq")
+svychisq(~penta_dtp + windex5_3, design = mics4.ch.wm_design_subset_p, statistic = "Chisq")
+
+svychisq(~penta_dtp + hl4, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") # NS
+
+svychisq(~penta_dtp + lang, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") 
+svychisq(~penta_dtp + lang_r_2, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") 
+svychisq(~penta_dtp + lang_r, design = mics4.ch.wm_design_subset_p, statistic = "Chisq")
+
+svychisq(~penta_dtp + melevel_r_2, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") 
+svychisq(~penta_dtp + melevel_r, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") 
+
+svychisq(~penta_dtp + pob, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") 
+svychisq(~penta_dtp + pob_2, design = mics4.ch.wm_design_subset_p, statistic = "Chisq")
+svychisq(~penta_dtp + pob_3, design = mics4.ch.wm_design_subset_p, statistic = "Chisq")
+
+svychisq(~penta_dtp + mn1_mn3, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") 
+svychisq(~penta_dtp + mn17_all_1, design = mics4.ch.wm_design_subset_p, statistic = "Chisq")
+
+svychisq(~penta_dtp + ag2, design = mics4.ch.wm_design_subset_p, statistic = "Chisq")  # NS
+
+svychisq(~penta_dtp + recall, design = mics4.ch.wm_design_subset_p, statistic = "Chisq") # 0.192
+
+
+################################### Table for bivariate analysis
+
+# other info for table
+
+m1 <- svyglm(penta_dtp ~ hh6, design = mics4.ch.wm_design_subset_p, family = quasibinomial()) 
+m2 <- svyglm(penta_dtp ~ hh7r_2, design = mics4.ch.wm_design_subset_p, family = quasibinomial()) 
+m3 <- svyglm(penta_dtp ~ windex5_2, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+m4 <- svyglm(penta_dtp ~ hl4, design = mics4.ch.wm_design_subset_p, family = quasibinomial()) 
+m5 <- svyglm(penta_dtp ~ lang_r, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+m6 <- svyglm(penta_dtp ~ melevel_r, design = mics4.ch.wm_design_subset_p, family = quasibinomial()) 
+m7 <- svyglm(penta_dtp ~ pob_2, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+m8 <- svyglm(penta_dtp ~ mn1_mn3, design = mics4.ch.wm_design_subset_p, family = quasibinomial()) 
+m9 <- svyglm(penta_dtp ~ mn17_all_1, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+m10 <- svyglm(penta_dtp ~ ag2_3, design = mics4.ch.wm_design_subset_p, family = quasibinomial())  
+
+
+#library(broom)
+
+tidy1 <- tidy(m1, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy2 <- tidy(m2, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy3 <- tidy(m3, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy4 <- tidy(m4, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy5 <- tidy(m5, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy6 <- tidy(m6, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy7 <- tidy(m7, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy8 <- tidy(m8, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy9 <- tidy(m9, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+tidy10 <- tidy(m10, exponentiate = TRUE, conf.int = TRUE)[-1, -c(3, 4)]
+
+tab <- bind_rows(tidy1, tidy2, tidy3, tidy4, tidy5, tidy6, tidy7, tidy8, tidy9, tidy10)
+
+write.csv(tab, "tables/mics4_biv_penta.csv", row.names = FALSE)
+
+
+```
+
+
+
+
+
+##### modelling in R
+
+Variables to include in model:
+
+- hh6
+- hh7r_2
+- windex
+- hl4
+- lang
+- melevel
+- pob
+- mn1_mn3
+- mn17_all
+- ag2_3
+
+     
+
+There are three options for the model in R:
+
+1. GLM
+2. GLM with weights (svyglm) (does not account for hierarchical structure of the data)
+3. Mixed model without survey weights (hierarchical logistic regression model)
+
+
+```{r glm}
+# Model glm
+mod1 <- glm(penta_dtp ~ hh6 + 
+              hh7r_2+
+              windex5_2 +
+              hl4 +
+              lang_r +
+              melevel_r +
+              pob_2 +
+              mn1_mn3 +
+              mn17_all_1 +
+              ag2_3, data=mics4.ch.wm_p1_anc, family=binomial(link="logit"))
+summary(mod1)
+vif(mod1) # nothing over 5
+
+```
+
+
+
+```{r svyglm}
+
+# GLM with survey weights
+mod2 <- svyglm(penta_dtp ~ hh6 + 
+                 hh7r_2 +
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 pob_2 +
+                 mn1_mn3 +
+                 mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+summary(mod2)
+vif(mod2) # a lot of concern here
+# need to address the correlations here
+
+# matrix
+# select the independent variables
+mics4.ch.wm_p1_anc %>% dplyr::select(hh6, hh7r_2, windex5_2, hl4, lang_r, melevel_r, pob_2, mn1_mn3, mn17_all_1, ag2_3) -> ind_var
+# create matrix
+# https://stackoverflow.com/questions/52554336/plot-the-equivalent-of-correlation-matrix-for-factors-categorical-data-and-mi
+model.matrix(~0+., data=ind_var) %>% 
+  cor(use="pairwise.complete.obs") %>% 
+  ggcorrplot(show.diag = F, type="lower", lab=TRUE, lab_size=2)
+# so it is especially mn17_all_1 and pob_2 that are highly correlating
+
+
+
+mod2a <- svyglm(penta_dtp ~ hh6 + 
+                 #hh7r_2 +
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 pob_2 +
+                 mn1_mn3 +
+                 mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+summary(mod2a)
+vif(mod2a) #still high; clearly pob is the problem
+
+
+
+mod2b <- svyglm(penta_dtp ~ hh6 + 
+                 #hh7r_2 +
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 #pob_2 +         
+                 mn1_mn3 +
+                 mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+summary(mod2b)
+vif(mod2b) # ahhhh
+
+
+mod2c <- svyglm(penta_dtp ~ hh6 + 
+                 hh7r_2 +
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 #pob_2 +         
+                 mn1_mn3 +
+                 mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+summary(mod2c)
+vif(mod2c) # still not great
+
+
+mod2d <- svyglm(penta_dtp ~ hh6 + 
+                 #hh7r_2 +
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 #pob_2 +         
+                 mn1_mn3 +
+                 #mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+summary(mod2d)
+vif(mod2d) # acceptable
+
+```
+
+
+
+```{r mixed model}
+
+# Next, we set up the mixed model in which we account for the fact that there are some children from the same household
+# Including optimzer
+mod3 <- glmer(penta_dtp ~ hh6 +
+                hh7r_2 +
+              windex5_2 +
+                hl4 +
+              lang_r +
+              melevel_r +
+              pob_2 +
+              mn1_mn3 +
+              mn17_all_1 + 
+                ag2_3 + (1 | hh_id), 
+            data=mics4.ch.wm_p1_anc, 
+            family=binomial(link="logit"),
+            glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+summary(mod3)
+
+anova(mod3, mod1) # yes; the mixed model is to be preferred over the glm
+
+vif(mod3) # vifs are lower!
+
+
+
+
+
+### same variables as in logistic regression
+mod3a <- glmer(penta_dtp ~ hh6 +
+                windex5_2 +
+                hl4 +
+                lang_r +
+                melevel_r +
+                #pob_2 +
+                mn1_mn3 +
+                ag2_3 + (1 | hh_id), 
+            data=mics4.ch.wm_p1_anc, 
+            family=binomial(link="logit"),
+            glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+summary(mod3a)
+
+
+```
+
+
+```{r model comparison}
+
+AIC(mod2b) # 2636.58172 
+AIC(mod2c) # 2647.967879
+
+# BIC(mod2c) # not possible
+
+export_summs(mod1, mod2a, mod2b, mod2c, mod2d, mod3, mod3a,
+             exp = TRUE, 
+             error_format = "[{conf.low}, {conf.high}], {p.value}", 
+             error_pos = c("right"), 
+             ci_level = 0.95, 
+             stars= NULL,
+             model.names = c("Logistic regression - mod1", 
+                             "Logistic regression \n (with survey weights) - mod2a",
+                             "Logistic regression \n (with survey weights) - mod2b",
+                             "Logistic regression \n (with survey weights) - mod2c",
+                             "Logistic regression \n (with survey weights) - mod2d",
+                             "Mixed model \n (without survey weights) - mod3",
+                             "Mixed model \n (without survey weights - mod4"),
+             to.file = "xlsx", file.name = "./tables/mics4-models-p1.xlsx")
+
+# to.file = "xlsx", file.name = "./tables/mics4-models-p1.xlsx"
+# Include options if you want to print it to excel or word
+
+```
+
+
+
+
+
+
+
+
+
+
+### data for map depicting vaccination coverage
+
+The maps were created using shapefiles from the Princeton University Library website (https://maps.princeton.edu/catalog/stanford-cp768st2071). 
+
+Steps to recreate the Figure showing vaccination coverage rates per province:
+1. Download shapefiles from Laos from website
+2. Save shapfiles in data folder as "lao_prov_princeton"
+3. Calculate the coverage rates per province
+4. Read in spatial data 
+5. merge spatial data with vaccination coverage data
+6. Create map
+
+Except for downloading the data, all code is provided below.
+
+NOTE: the administrative provinces of Laos in 2011/12 do not entirely correspond with the provinces in 2017!
+
+
+
+
+
+
+#### calculate vaccination coverage per province
+
+
+```{r numbers for map of birth dose coverage}
+
+svytable(~hh7 + hepb0_rc_2, design = mics4.ch.wm_design_subset_b) %>% 
+  as.data.frame() %>% 
+  group_by(hh7) %>% 
+  mutate(prop_bd = round(Freq / sum(Freq)*100, 2)) %>% 
+  filter(hepb0_rc_2 == 1) -> n_2012_bd_coverage
+
+```
+
+
+```{r numbers for map of penta dtp coverage}
+
+svytable(~hh7+penta_dtp, design = mics4.ch.wm_design_subset_p) %>% 
+  as.data.frame() %>% 
+  group_by(hh7) %>% 
+  mutate(prop_penta_dtp = round(Freq / sum(Freq)*100, 2)) %>% 
+  filter(penta_dtp == 1) -> n_2012_penta_coverage
+# For recall, we do not have each dose
+
+```
+
+
+```{r merge data}
+
+# merge bd coverage with penta coverage
+n_2012_bd_coverage %>% select(hh7, prop_bd) -> n_2012_bd_coverage
+n_2012_penta_coverage %>% select(hh7, prop_penta_dtp) -> n_2012_penta_coverage
+  
+full_join(n_2012_bd_coverage, n_2012_penta_coverage, by="hh7") -> vac_cov_2012
+write.csv(vac_cov_2012, "tables/vaccination_coverage_2012.csv")
+
+```
+
+
+#### read in spatial data 
+
+
+```{r data prov}
+
+adm1_2013 <- read_sf("data/lao_prov_princeton/polbnda_lao.shp")
+adm1_2013
+
+## 17 provinces
+adm1_2013 %>% count(nam)
+
+```
+
+
+```{r create a new variable for province names}
+
+adm1_2013 %>% count(nam)
+
+adm1_2013 %>% mutate(hh7 = ifelse(nam == "P.ATTAPU", 17,
+                                ifelse(nam == "P.BOKEO", 5, 
+                                ifelse(nam == "P.BOLIKHAMXAI", 11,
+                                ifelse(nam == "P.CHAMPASAK", 16,
+                                ifelse(nam == "P.HOUAPHAN", 7,
+                                ifelse(nam == "P.KHAMMOUANN", 12,
+                                ifelse(nam == "P.LOUANGNAMTHA", 3,
+                                ifelse(nam == "P.LOUANGPHABANG", 6,
+                                ifelse(nam == "P.OUDOMXAI", 4,
+                                ifelse(nam == "P.PHONGSALI", 2, 
+                                ifelse(nam == "P.SALAVAN", 14,
+                                ifelse(nam == "P.SAVANNAKHET", 13,
+                                ifelse(nam == "P.XEKONG", 15,
+                                ifelse(nam == "P.VIENTIANE", 10, 
+                                ifelse(nam == "VIENTINE CAPITAL", 1,
+                                ifelse(nam == "P.XAIGNABOULI", 8, 
+                                       9))))))))))))))))) -> adm1_2013
+
+```
+
+
+#### merge spatial data with vaccination coverage data
+
+```{r merge}
+
+# Merge the datasets
+data_2012 %>% select(hh7, Prop_bd, Prop_penta_dtp) -> cov_2012
+
+merge(adm1_2013, cov_2012, by = "hh7") -> adm1_2013_cov
+
+adm1_2013_cov %>% count(nam, hh7)
+
+```
+
+
+```{r crs}
+
+st_crs(adm1_2013_cov)
+
+tm_shape(adm1_2013_cov)+tm_polygons() # seems to work
+
+
+```
+
+
+#### create maps
+
+```{r all maps}
+
+tm_shape(adm1_2013_cov) + 
+  tm_polygons() +
+  tm_shape(adm1_2013_cov) + 
+  tm_fill(col="Prop_bd",
+          breaks=c(10,20,30,40,50,60,70,80,90,100),
+          labels = c("10%-20%", "20%-30%", "30%-40%", "40%-50%", "50%-60%", "60%-70%", "70%-80%", "80%-90%", "90%-100%"), 
+          palette = "viridis",
+          title = "HBV birth dose coverage",
+          legend.position = c("left", "bottom"),
+          legend.text.size = 0.7) + 
+  tm_borders()+
+  tm_legend(text.size=0.5) +
+  tm_layout(title = "2012", title.position = c("right", "top")) -> map1_2012
+
+tm_shape(adm1_2013_cov) +
+  tm_polygons() +
+  tm_shape(adm1_2013_cov) + 
+  tm_fill(col="Prop_penta_dtp",
+          breaks=c(10, 20,30,40,50,60,70,80,90,100), 
+          labels = c("10%-20%", "20%-30%", "30%-40%", "40%-50%", "50%-60%", "60%-70%", "70%-80%", "80%-90%", "90%-100%"), 
+          palette = "viridis",
+          title = "HBV vaccination coverage",
+          legend.position = c("left", "bottom"),
+          legend.text.size = 0.7) + 
+  tm_borders()+
+  tm_legend(text.size=0.5) +
+  tm_layout(title = "2012", title.position = c("right", "top")) -> map2_2012
+
+#tmap::tmap_save(map1_2012,"outputs/map1_12.png", width=7,height=12,units ="cm")
+#tmap::tmap_save(map2_2012,"outputs/map2_12.png", width=7,height=12,units ="cm")
+
+```
+
+
+
