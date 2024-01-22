@@ -2144,6 +2144,25 @@ export_summs(mod1, mod2, mod2a, mod2b, mod2c, mod3, mod3a,
 ```
 
 
+```{r extract p values from model}
+
+mod2c <- svyglm(hepb0_rc_2 ~ hh6 + 
+                 #hh7r_2+
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 pob_2 +
+                 mn1_mn3 +
+                 #mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_b, family = quasibinomial())
+summary(mod2c)
+vif(mod2c) # acceptable; although almost 11
+
+summ(mod2c, digits = 5,exp = TRUE, confint = TRUE)
+
+```
+
 
 
 
@@ -2538,6 +2557,25 @@ export_summs(mod1, mod2a, mod2b, mod2c, mod2d, mod3, mod3a,
 ```
 
 
+```{r extract p value}
+# extract p values
+
+mod2d <- svyglm(penta_dtp ~ hh6 + 
+                 #hh7r_2 +
+                 windex5_2 +
+                 hl4 +
+                 lang_r +
+                 melevel_r +
+                 #pob_2 +         
+                 mn1_mn3 +
+                 #mn17_all_1 +
+                 ag2_3, design = mics4.ch.wm_design_subset_p, family = quasibinomial())
+summary(mod2d)
+vif(mod2d) # accept
+
+summ(mod2d, digits = 5, exp = TRUE, confint = TRUE)
+
+```
 
 
 
