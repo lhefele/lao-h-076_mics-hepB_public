@@ -2580,6 +2580,211 @@ summ(mod2d, digits = 5, exp = TRUE, confint = TRUE)
 
 
 
+### sensitivity analysis: stratify according to recall or vaccination cards
+
+
+#### hepatitis B birth dose
+
+```{r subset and survey design - children with and without vaccination cards}
+
+# create variable domain
+mics4.ch.wm %>% mutate(domain_b_vaccard = ag2 < 3 & cm13 == "Y" & recall == 0) -> mics4.ch.wm
+mics4.ch.wm %>% count(domain_b_vaccard) 	
+
+# create variable domain
+mics4.ch.wm %>% mutate(domain_b_recall = ag2 < 3 & cm13 == "Y" & recall == 1) -> mics4.ch.wm
+mics4.ch.wm %>% count(domain_b_recall) 
+
+
+# first, create the design for the entire dataset
+mics4.ch.wm_design <- svydesign(data = mics4.ch.wm, weights = ~chweight, id = ~strata+hh1)
+mics4.ch.wm_design
+
+
+# now subset with the domain variable
+mics4.ch.wm_design_subset_b_vaccard <- subset(mics4.ch.wm_design, domain_b_vaccard)
+mics4.ch.wm_design_subset_b_vaccard
+
+# now subset with the domain variable
+mics4.ch.wm_design_subset_b_recall <- subset(mics4.ch.wm_design, domain_b_recall)
+mics4.ch.wm_design_subset_b_recall
+
+```
+
+
+```{r svyglm children with vaccination card}
+
+mod1 <- svyglm(hepb0_rc_2 ~ hh6 + 
+                hh7r_2+
+                windex5_2 +
+                hl4 +
+                lang_r +
+                melevel_r +
+                pob_2 +
+                mn1_mn3 +
+                ag2_3, design = mics4.ch.wm_design_subset_b_vaccard, family = quasibinomial())
+summary(mod1)
+vif(mod1) # vif too large
+summ(mod1, exp = TRUE)
+
+
+mod1a <- svyglm(hepb0_rc_2 ~ hh6 + 
+                #hh7r_2+
+                windex5_2 +
+                hl4 +
+                lang_r +
+                melevel_r +
+                pob_2 +
+                mn1_mn3 +
+                ag2_3, design = mics4.ch.wm_design_subset_b_vaccard, family = quasibinomial())
+summary(mod1a)
+vif(mod1a)
+summ(mod1a, exp = TRUE)
+
+
+mod1b <- svyglm(hepb0_rc_2 ~ hh6 + 
+                #hh7r_2+
+                windex5_2 +
+                hl4 +
+                lang_r +
+                melevel_r +
+                pob_2 +
+                #mn1_mn3 +
+                ag2_3, design = mics4.ch.wm_design_subset_b_vaccard, family = quasibinomial())
+summary(mod1b)
+vif(mod1b) # ok
+summ(mod1b, exp = TRUE)
+
+```
+
+
+```{r svyglm children without vaccination card}
+
+mod2 <- svyglm(hepb0_rc_2 ~ hh6 + 
+                 hh7r_2+
+                windex5_2 +
+                hl4 +
+                lang_r +
+                melevel_r +
+                pob_2 +
+                mn1_mn3 +
+                ag2_3, design = mics4.ch.wm_design_subset_b_recall, family = quasibinomial())
+summary(mod2)
+vif(mod2) # too large
+summ(mod2, exp = TRUE)
+
+mod2a <- svyglm(hepb0_rc_2 ~ hh6 + 
+                 hh7r_2+
+                windex5_2 +
+                hl4 +
+                lang_r +
+                melevel_r +
+                pob_2 +   #ag2_3 +
+                mn1_mn3, design = mics4.ch.wm_design_subset_b_recall, family = quasibinomial())
+summary(mod2a)
+vif(mod2a) 
+summ(mod2a, exp = TRUE)
+
+```
+
+
+```{r export models}
+
+export_summs(mod1b, mod2a,
+             exp = TRUE, 
+             error_format = "[{conf.low}, {conf.high}], {p.value}", 
+             error_pos = c("right"), 
+             ci_level = 0.95, 
+             stars= NULL,
+             model.names = c("Logistic regression - mod1b",
+                             "Logistic regression - mod2a"),
+             to.file = "xlsx", file.name = "./tables/mics4-sensitivity-analysis_bd.xlsx")
+
+
+
+```
+
+
+#### pentavalent vaccine
+
+```{r subset and survey design - children with and without vaccination cards}
+
+# create variable domain
+mics4.ch.wm %>% mutate(domain_p_vaccard = ag2 > 0 & ag2 < 3 & cm13 == "Y" & recall == 0) -> mics4.ch.wm
+mics4.ch.wm %>% count(domain_p_vaccard) # 1203	
+
+# create variable domain
+mics4.ch.wm %>% mutate(domain_p_recall = ag2 > 0 & ag2 < 3 & cm13 == "Y" & recall == 1) -> mics4.ch.wm
+mics4.ch.wm %>% count(domain_p_recall) # 1475	
+
+
+# first, create the design for the entire dataset
+mics4.ch.wm_design <- svydesign(data = mics4.ch.wm, weights = ~chweight, id = ~strata+hh1)
+mics4.ch.wm_design
+
+
+# now subset with the domain variable
+mics4.ch.wm_design_subset_p_vaccard <- subset(mics4.ch.wm_design, domain_p_vaccard)
+mics4.ch.wm_design_subset_p_vaccard
+
+# now subset with the domain variable
+mics4.ch.wm_design_subset_p_recall <- subset(mics4.ch.wm_design, domain_p_recall)
+mics4.ch.wm_design_subset_p_recall
+
+
+```
+
+
+```{r svyglm children with vaccination card}
+
+mod1 <- svyglm(penta_dtp ~ hh6 + 
+                windex5_2 +
+                hl4 +
+                lang_r +
+                melevel_r +
+                # pob_2 +    # excluded
+                mn1_mn3 +
+                ag2_3, design = mics4.ch.wm_design_subset_p_vaccard, family = quasibinomial())
+summary(mod1)
+vif(mod1)
+summ(mod1, exp = TRUE)
+
+```
+
+
+```{r svyglm children without vaccination card}
+
+mod2 <- svyglm(penta_dtp ~ hh6 + 
+                windex5_2 +
+                hl4 +
+                lang_r +
+                melevel_r +
+                # pob_2 +     # excluded
+                mn1_mn3 +
+                ag2_3, design = mics4.ch.wm_design_subset_p_recall, family = quasibinomial())
+summary(mod2)
+vif(mod2)
+summ(mod2, exp = TRUE)
+
+```
+
+
+```{r export models}
+
+export_summs(mod1, mod2,
+             exp = TRUE, 
+             error_format = "[{conf.low}, {conf.high}], {p.value}", 
+             error_pos = c("right"), 
+             ci_level = 0.95, 
+             stars= NULL,
+             model.names = c("Logistic regression - mod1", 
+                             "Logistic regression - mod2"),
+             to.file = "xlsx", file.name = "./tables/mics4-sensitivity-analysis_p.xlsx")
+
+```
+
+
+
 
 
 

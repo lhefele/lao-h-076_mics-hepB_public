@@ -2335,6 +2335,424 @@ export_summs(mod1, mod2a, mod3, mod4,
 
 
 
+### sensitivity analysis: stratify according to recall or vaccination cards
+
+
+#### birth dose
+
+```{r subset and survey design - children with and without vaccination cards}
+
+# create variable domain
+mics6.ch.wm %>% mutate(domain_b_vaccard = ub2 <3 & cm17 == 1 & recall == 0) -> mics6.ch.wm
+mics6.ch.wm %>% count(domain_b_vaccard) 	
+
+# create variable domain
+mics6.ch.wm %>% mutate(domain_b_recall = ub2 <3 & cm17 == 1 & recall == 1) -> mics6.ch.wm
+mics6.ch.wm %>% count(domain_b_recall) 
+
+
+# first, create the design for the entire dataset
+mics6.ch.wm_design <- svydesign(data = mics6.ch.wm, weights = ~chweight, id = ~stratum+hh1)
+mics6.ch.wm_design
+
+
+# now subset with the domain variable
+mics6.ch.wm_design_subset_b_vaccard <- subset(mics6.ch.wm_design, domain_b_vaccard)
+mics6.ch.wm_design_subset_b_vaccard
+
+# now subset with the domain variable
+mics6.ch.wm_design_subset_b_recall <- subset(mics6.ch.wm_design, domain_b_recall)
+mics6.ch.wm_design_subset_b_recall
+
+
+```
+
+
+```{r svyglm children with vaccination card}
+
+mod1 <- svyglm(hepb0_rc_2 ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_b_vaccard, family = quasibinomial())
+summary(mod1)
+vif(mod1)
+summ(mod1)
+
+mod1a <- svyglm(hepb0_rc_2 ~ hh6 + 
+              #hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              mn2_mn5 +
+              #mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_b_vaccard, family = quasibinomial())
+summary(mod1a)
+vif(mod1a)
+summ(mod1a)
+
+```
+
+
+```{r svyglm children without vaccination card}
+
+mod2 <- svyglm(hepb0_rc_2 ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_b_recall, family = quasibinomial())
+summary(mod2)
+vif(mod2)
+summ(mod2)
+
+
+mod2a <- svyglm(hepb0_rc_2 ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              #pob_2 +
+              mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_b_recall, family = quasibinomial())
+summary(mod2a)
+vif(mod2a)
+summ(mod2a)
+
+
+
+mod2b <- svyglm(hepb0_rc_2 ~ hh6 + 
+              #hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              #pob_2 +
+              mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_b_recall, family = quasibinomial())
+summary(mod2b)
+vif(mod2b)
+summ(mod2b)
+
+
+mod2c <- svyglm(hepb0_rc_2 ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              #pob_2 +
+              mn2_mn5 +
+              #mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_b_recall, family = quasibinomial())
+summary(mod2c)
+vif(mod2c)
+summ(mod2c)
+
+
+mod2d <- svyglm(hepb0_rc_2 ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              #mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_b_recall, family = quasibinomial())
+summary(mod2d)
+vif(mod2d)
+summ(mod2d)
+
+
+mod2e <- svyglm(hepb0_rc_2 ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              mn2_mn5 +
+              #mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_b_recall, family = quasibinomial())
+summary(mod2e)
+vif(mod2e)
+summ(mod2e)
+
+
+mod2f <- svyglm(hepb0_rc_2 ~ hh6 + 
+              #hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              mn2_mn5 +
+              #mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_b_recall, family = quasibinomial())
+summary(mod2f)
+vif(mod2f)
+summ(mod2f)
+
+```
+
+
+
+#### pentavalent vaccine
+
+```{r subset and survey design - children with and without vaccination cards}
+
+# create variable domain
+mics6.ch.wm %>% mutate(domain_p_vaccard = ub2 >0 & ub2 <3 & cm17 == 1 & recall == 0) -> mics6.ch.wm
+mics6.ch.wm %>% count(domain_p_vaccard) 	
+
+# create variable domain
+mics6.ch.wm %>% mutate(domain_p_recall = ub2 >0 & ub2 <3 & cm17 == 1 & recall == 1) -> mics6.ch.wm
+mics6.ch.wm %>% count(domain_p_recall) 
+
+
+# first, create the design for the entire dataset
+mics6.ch.wm_design <- svydesign(data = mics6.ch.wm, weights = ~chweight, id = ~stratum+hh1)
+mics6.ch.wm_design
+
+
+
+# now subset with the domain variable
+mics6.ch.wm_design_subset_p_vaccard <- subset(mics6.ch.wm_design, domain_p_vaccard)
+mics6.ch.wm_design_subset_p_vaccard
+
+# now subset with the domain variable
+mics6.ch.wm_design_subset_p_recall <- subset(mics6.ch.wm_design, domain_p_recall)
+mics6.ch.wm_design_subset_p_recall
+
+
+```
+
+
+```{r svyglm children with vaccination card}
+
+mod1 <- svyglm(penta_3_doses ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_vaccard, family = quasibinomial())
+summary(mod1)
+vif(mod1)
+summ(mod1)
+
+### too much multicollinearity
+
+mod1a <- svyglm(penta_3_doses ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              #pob_2 +
+              mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_vaccard, family = quasibinomial())
+summary(mod1a)
+vif(mod1a)
+summ(mod1a)
+
+
+mod1b <- svyglm(penta_3_doses ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              mn2_mn5 +
+              #mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_vaccard, family = quasibinomial())
+summary(mod1b)
+vif(mod1b)
+summ(mod1b)
+
+```
+
+
+
+```{r svyglm children without vaccination card}
+
+mod2 <- svyglm(penta_3_doses ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_recall, family = quasibinomial())
+summary(mod2)
+vif(mod2)
+summ(mod2)
+
+
+mod2a <- svyglm(penta_3_doses ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              #pob_2 +
+              mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_recall, family = quasibinomial())
+summary(mod2a)
+vif(mod2a)
+summ(mod2a)
+
+
+mod2b <- svyglm(penta_3_doses ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              #pob_2 +
+              #mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_recall, family = quasibinomial())
+summary(mod2b)
+vif(mod2b)
+summ(mod2b)
+
+
+mod2c <- svyglm(penta_3_doses ~ hh6 + 
+              #hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              #pob_2 +
+              mn2_mn5 +
+              mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_recall, family = quasibinomial())
+summary(mod2c)
+vif(mod2c)
+summ(mod2c)
+
+
+mod2d <- svyglm(penta_3_doses ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              mn2_mn5 +
+              #mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_recall, family = quasibinomial())
+summary(mod2d)
+vif(mod2d)
+summ(mod2d)
+
+
+mod2e <- svyglm(penta_3_doses ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              pob_2 +
+              #mn2_mn5 +
+              #mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_recall, family = quasibinomial())
+summary(mod2e)
+vif(mod2e)
+summ(mod2e)
+
+
+mod2f <- svyglm(penta_3_doses ~ hh6 + 
+              hh7r_2 +
+              windex5_2 +
+              hl4 +
+              ethnicity_r +
+              melevel_r +
+              #pob_2 +
+              mn2_mn5 +
+              #mn19_all_1 +
+              ub2_f, design = mics6.ch.wm_design_subset_p_recall, family = quasibinomial())
+summary(mod2f)
+vif(mod2f)
+summ(mod2f)
+
+```
+
+
+```{r export models}
+
+
+export_summs(mod1, mod1a, mod1b, mod2, mod2a, mod2b, mod2c, mod2d, mod2e, mod2f,
+             exp = TRUE, 
+             error_format = "[{conf.low}, {conf.high}], {p.value}", 
+             error_pos = c("right"), 
+             ci_level = 0.95, 
+             stars= NULL,
+             model.names = c("Logistic regression - mod1", 
+                             "Logistic regression - mod1a", 
+                             "Logistic regression - mod1b",
+                             "Logistic regression - mod2",
+                             "Logistic regression - mod2a",
+                             "Logistic regression - mod2b",
+                             "Logistic regression - mod2c",
+                             "Logistic regression - mod2d",
+                             "Logistic regression - mod2e",
+                             "Logistic regression - mod2f"),
+             to.file = "xlsx", file.name = "./tables/mics6-sensitivity-analysis_p.xlsx")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### data for map depicting vaccination coverage 
 
