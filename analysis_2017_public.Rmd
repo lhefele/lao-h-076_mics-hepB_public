@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
+
+
 ## analysis of mics6 2017 data
 
 
@@ -1850,6 +1852,8 @@ mod2a2 <- svyglm(hepb0_rc_2 ~ hh6 +
 summary(mod2a2)
 vif(mod2a2) # without those two variables, the vif values are much improved
 
+summ(mod2a2, digits = 5, exp = TRUE, confint = TRUE)
+
 
 # Model including assistance at birth
 mod2b <- svyglm(hepb0_rc_2 ~ hh6 +
@@ -1962,6 +1966,27 @@ export_summs(mod1, mod2a2, mod3, mod4,
 # to.file = "xlsx", file.name = "mics6-models-b1.xlsx"
 # to.file = "xlsx", file.name = "./tables/mics6-models-b1.xlsx"
 # Include options if you want to print it to excel or word
+
+```
+
+
+```{r export p values}
+
+# Model including place of birth
+mod2a2 <- svyglm(hepb0_rc_2 ~ hh6 +
+                  #hh7r_2 +
+                 windex5_2 +
+                  hl4 +
+                 ethnicity_r +
+                 melevel_r +
+                 pob_2 +
+                 mn2_mn5 +
+                 #mn19_all_1 +
+                 ub2_f, design = mics6.ch.wm_design_subset_b, family = quasibinomial())
+summary(mod2a2)
+vif(mod2a2) # without those two variables, the vif values are much improved
+
+summ(mod2a2, digits = 5, exp = TRUE, confint = TRUE)
 
 ```
 
@@ -2259,7 +2284,7 @@ mod2b <- svyglm(penta_3_doses ~ hh6 +
                   mn19_all_1 +
                   ub2_f, design = mics6.ch.wm_design_subset_p, family = quasibinomial())
 summary(mod2b)
-vif(mod2a) # acceptable
+vif(mod2b) # acceptable
 
 ```
 
@@ -2308,6 +2333,26 @@ mod4 <- glmer(penta_3_doses ~ hh6 +
 summary(mod4)
 
 vif(mod4)
+
+```
+
+
+```{r export p values}
+
+mod2a <- svyglm(penta_3_doses ~ hh6 + 
+                  hh7r_2 +
+                  windex5_2 +
+                  hl4 +
+                  ethnicity_r +
+                  melevel_r +
+                  pob_2 +
+                  mn2_mn5 +
+                  #mn19_all_1 +
+                  ub2_f, design = mics6.ch.wm_design_subset_p, family = quasibinomial())
+summary(mod2a)
+vif(mod2a) 
+
+summ(mod2a, digits = 5, exp = TRUE, confint = TRUE)
 
 ```
 
@@ -2936,12 +2981,105 @@ map_lao +
   tm_layout()+
   tm_legend(text.size=0.5) -> map4_17
 
-tmap::tmap_save(map1_17,"outputs/map1_17.png", width=7,height=12,units ="cm")
-tmap::tmap_save(map2_17,"outputs/map2_17.png", width=7,height=12,units ="cm")
-tmap::tmap_save(map3_17,"outputs/map3_17.png", width=7,height=12,units ="cm")
-tmap::tmap_save(map4_17,"outputs/map4_17.png", width=7,height=12,units ="cm")
+tmap::tmap_save(map1_17,"tables/map1_17.png", width=7,height=12,units ="cm")
+tmap::tmap_save(map2_17,"tables/map2_17.png", width=7,height=12,units ="cm")
+tmap::tmap_save(map3_17,"tables/map3_17.png", width=7,height=12,units ="cm")
+tmap::tmap_save(map4_17,"tables/map4_17.png", width=7,height=12,units ="cm")
+
+
+map1_17
+map2_17
+map3_17
+map4_17
 
 ```
+
+
+
+
+#### Create the map depicting the differences
+
+
+```{r read in data}
+
+# data was created by using the tables for the maps created in 2012 and 2017
+# the coverage of the birth dose in 2012 was subtracted from the birth dose coverage in 2017
+# the coverage of the combination vaccine in 2012 was subtracted from the coverage with the third dose of the hepatitis B antigen containing vaccine
+
+vac_diff <- read.csv2("data_raw/vaccination_coverage_difference.csv", header = TRUE, sep = ";", dec = ".")
+
+```
+
+
+```{r merge}
+
+merge(adm1_2018_cov, vac_diff, by = "hh7") -> adm1_2018_cov_diff
+
+glimpse(adm1_2018_cov_diff)
+
+```
+
+
+```{r map difference}
+
+map_lao = tm_shape(adm1_2018_cov_diff) 
+
+map_lao + 
+  #tm_shape(adm1_2018_cov_diff) +
+  tm_polygons("diff_bd", midpoint = 0,
+              palette = "viridis",
+              title = "Difference",
+              legend.position = c("left", "bottom"),
+              legend.text.size = 0.6) + 
+  tm_borders()+
+  tm_legend(text.size=0.5) +
+  tm_layout(title = "a", title.position = c("left", "top")) -> map_bd_diff
+
+
+map_lao + 
+  #tm_shape(adm1_2018_cov_diff) +
+  tm_polygons("diff_dtp", midpoint = 0,
+              palette = "viridis",
+              title = "Difference",
+              legend.position = c("left", "bottom"),
+              legend.text.size = 0.6) + 
+  tm_borders()+
+  tm_legend(text.size=0.5) +
+  tm_layout(title = "b", title.position = c("left", "top")) -> map_dtp_diff
+
+
+tmap::tmap_save(map_bd_diff,"tables/map_bd_diff.png", width=7,height=12,units ="cm")
+tmap::tmap_save(map_dtp_diff,"tables/map_dtp_diff.png", width=7,height=12,units ="cm")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
