@@ -2981,10 +2981,10 @@ map_lao +
   tm_layout()+
   tm_legend(text.size=0.5) -> map4_17
 
-tmap::tmap_save(map1_17,"tables/map1_17.png", width=7,height=12,units ="cm")
-tmap::tmap_save(map2_17,"tables/map2_17.png", width=7,height=12,units ="cm")
-tmap::tmap_save(map3_17,"tables/map3_17.png", width=7,height=12,units ="cm")
-tmap::tmap_save(map4_17,"tables/map4_17.png", width=7,height=12,units ="cm")
+#tmap::tmap_save(map1_17,"graphs/map1_17.png", width=7,height=12,units ="cm")
+#tmap::tmap_save(map2_17,"graphs/map2_17.png", width=7,height=12,units ="cm")
+#tmap::tmap_save(map3_17,"graphs/map3_17.png", width=7,height=12,units ="cm")
+#tmap::tmap_save(map4_17,"graphs/map4_17.png", width=7,height=12,units ="cm")
 
 
 map1_17
@@ -3020,36 +3020,41 @@ glimpse(adm1_2018_cov_diff)
 ```
 
 
+
+
 ```{r map difference}
 
 map_lao = tm_shape(adm1_2018_cov_diff) 
 
 map_lao + 
-  #tm_shape(adm1_2018_cov_diff) +
-  tm_polygons("diff_bd", midpoint = 0,
+  tm_polygons("diff_bd", 
+              midpoint = 0,
               palette = "viridis",
-              title = "Difference",
+              title = "% difference",
               legend.position = c("left", "bottom"),
+              legend.title.size = 0.8,
               legend.text.size = 0.6) + 
   tm_borders()+
-  tm_legend(text.size=0.5) +
-  tm_layout(title = "a", title.position = c("left", "top")) -> map_bd_diff
+  tm_layout(title = "a", 
+            title.position = c("left", "top"),
+            legend.title.size = 1.2) -> map_bd_diff
 
 
 map_lao + 
-  #tm_shape(adm1_2018_cov_diff) +
-  tm_polygons("diff_dtp", midpoint = 0,
+  tm_polygons("diff_dtp", 
+              midpoint = 0,
               palette = "viridis",
-              title = "Difference",
+              title = "% difference",
               legend.position = c("left", "bottom"),
+              legend.title.size = 0.8,
               legend.text.size = 0.6) + 
   tm_borders()+
-  tm_legend(text.size=0.5) +
-  tm_layout(title = "b", title.position = c("left", "top")) -> map_dtp_diff
+  tm_layout(title = "b",
+            title.position = c("left", "top")) -> map_dtp_diff
 
 
-tmap::tmap_save(map_bd_diff,"tables/map_bd_diff.png", width=7,height=12,units ="cm")
-tmap::tmap_save(map_dtp_diff,"tables/map_dtp_diff.png", width=7,height=12,units ="cm")
+#tmap::tmap_save(map_bd_diff,"graphs/map_bd_diff.png", width=8, height=14, units ="cm")
+#tmap::tmap_save(map_dtp_diff,"graphs/map_dtp_diff.png", width=8, height=14, units ="cm")
 
 
 ```

@@ -2945,8 +2945,8 @@ tm_shape(adm1_2013_cov) +
 map2_2012
 
 
-#tmap::tmap_save(map1_2012,"outputs/map1_12.png", width=7,height=12,units ="cm")
-#tmap::tmap_save(map2_2012,"outputs/map2_12.png", width=7,height=12,units ="cm")
+#tmap::tmap_save(map1_2012,"graphs/map1_12.png", width=7,height=12,units ="cm")
+#tmap::tmap_save(map2_2012,"graphs/map2_12.png", width=7,height=12,units ="cm")
 
 ```
 
