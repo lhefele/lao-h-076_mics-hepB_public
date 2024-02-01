@@ -74,6 +74,8 @@ package.check <- lapply(
 ```
 
 
+
+
 ### data import
 
 ```{r dataset mics6 ch}
@@ -82,6 +84,7 @@ package.check <- lapply(
 mics4.ch <- read_sav("./data/mics4/ch.sav")  # 11258 obs
 
 ```
+
 
 ```{r dataset mics6 wm}
 
