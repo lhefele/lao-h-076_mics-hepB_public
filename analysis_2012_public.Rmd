@@ -94,10 +94,13 @@ mics4.wm <- read_sav("./data/mics4/wm.sav")  # 23937 obs
 
 
 
+
+
 ### data preparation
 
 
 #### mics4.ch - children <= 5: selecting data
+
 
 ```{r clean variable names mics4.ch}
 # change names of variables
@@ -1683,7 +1686,10 @@ mics4.ch.wm_design_subset_b
 
 
 
+
+
 ##### descriptive analysis
+
 
 ```{r descriptive analysis table}
 
@@ -1744,6 +1750,8 @@ ggplot(data = tab, mapping = aes(x=hh6, y=Freq, fill = windex5)) +
   theme(text=element_text(size=14)) +
   theme(axis.text.x = element_text(colour="black"), axis.text.y = element_text(colour="black")) -> A
 
+
+
 # Ethnicity by area
 svytable(~lang + hh6, design = mics4.ch.wm_design_subset_b) -> tab
 tab <- as.data.frame(tab)
@@ -1764,6 +1772,7 @@ ggplot(data = tab, mapping = aes(x=hh6, y=Freq, fill = lang)) +
   theme(text=element_text(size=14)) +
   theme(axis.text.x = element_text(colour="black"), 
         axis.text.y = element_text(colour="black")) -> B
+
 
 
 # place of delivery by area
@@ -2171,7 +2180,11 @@ summ(mod2c, digits = 5,exp = TRUE, confint = TRUE)
 
 
 
+
+
+
 #### subset mics4.ch.wm_p1_anc: factors associated with hepatitis b antigen containing vaccine
+
 
 
 ##### subset
@@ -2214,7 +2227,6 @@ mics4.ch.wm_design_subset_p <- subset(mics4.ch.wm_design, domain_p)
 mics4.ch.wm_design_subset_p
 
 ```
-
 
 
 
@@ -2484,7 +2496,6 @@ vif(mod2d) # acceptable
 ```
 
 
-
 ```{r mixed model}
 
 # Next, we set up the mixed model in which we account for the fact that there are some children from the same household
@@ -2582,10 +2593,14 @@ summ(mod2d, digits = 5, exp = TRUE, confint = TRUE)
 
 
 
-### sensitivity analysis: stratify according to recall or vaccination cards
+
+
+### sensitivity analysis: stratify according to recall or vaccination 
+
 
 
 #### hepatitis B birth dose
+
 
 ```{r subset and survey design - children with and without vaccination cards}
 
@@ -2610,6 +2625,53 @@ mics4.ch.wm_design_subset_b_vaccard
 # now subset with the domain variable
 mics4.ch.wm_design_subset_b_recall <- subset(mics4.ch.wm_design, domain_b_recall)
 mics4.ch.wm_design_subset_b_recall
+
+```
+
+
+```{r descriptive analysis table}
+
+mics4.ch.wm_design_subset_b_vaccard %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                lang,
+                melevel,
+                mn18, 
+                mn1_mn3,
+                mn17_all_1,
+                ag2,
+                recall,
+                hepb0_rc_2), 
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics4_descriptive_ch_0-2_vac-card_bd.xlsx",
+                       borders = 0.4,
+                       open = interactive())
+
+mics4.ch.wm_design_subset_b_recall %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                lang,
+                melevel,
+                mn18, 
+                mn1_mn3,
+                mn17_all_1,
+                ag2,
+                recall,
+                hepb0_rc_2), 
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics4_descriptive_ch_0-2_recall_bd.xlsx",
+                       borders = 0.4,
+                       open = interactive())
 
 ```
 
@@ -2703,11 +2765,12 @@ export_summs(mod1b, mod2a,
              to.file = "xlsx", file.name = "./tables/mics4-sensitivity-analysis_bd.xlsx")
 
 
-
 ```
 
 
+
 #### pentavalent vaccine
+
 
 ```{r subset and survey design - children with and without vaccination cards}
 
@@ -2733,6 +2796,55 @@ mics4.ch.wm_design_subset_p_vaccard
 mics4.ch.wm_design_subset_p_recall <- subset(mics4.ch.wm_design, domain_p_recall)
 mics4.ch.wm_design_subset_p_recall
 
+
+```
+
+
+```{r descriptive analysis table}
+
+mics4.ch.wm_design_subset_p_vaccard %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                lang,
+                melevel,
+                mn18, 
+                mn1_mn3,
+                mn17_all_1,
+                ag2,
+                recall,
+                penta_3_doses,
+                penta_dtp), 
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics4_descriptive_ch_1-2_vac-card_p.xlsx",
+                       borders = 0.4,
+                       open = interactive())
+
+mics4.ch.wm_design_subset_p_recall %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                lang,
+                melevel,
+                mn18, 
+                mn1_mn3,
+                mn17_all_1,
+                ag2,
+                recall,
+                penta_3_doses,
+                penta_dtp), 
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics4_descriptive_ch_1-2_recall_p.xlsx",
+                       borders = 0.4,
+                       open = interactive())
 
 ```
 
@@ -2791,7 +2903,10 @@ export_summs(mod1, mod2,
 
 
 
+
+
 ### data for map depicting vaccination coverage
+
 
 The maps were created using shapefiles from the Princeton University Library website (https://maps.princeton.edu/catalog/stanford-cp768st2071). 
 

@@ -2380,10 +2380,14 @@ export_summs(mod1, mod2a, mod3, mod4,
 
 
 
+
+
 ### sensitivity analysis: stratify according to recall or vaccination cards
 
 
+
 #### birth dose
+
 
 ```{r subset and survey design - children with and without vaccination cards}
 
@@ -2409,6 +2413,58 @@ mics6.ch.wm_design_subset_b_vaccard
 mics6.ch.wm_design_subset_b_recall <- subset(mics6.ch.wm_design, domain_b_recall)
 mics6.ch.wm_design_subset_b_recall
 
+
+```
+
+
+```{r descriptive analysis table}
+
+# unweighted numbers
+mics6.ch.wm %>% filter(ub2 < 3 & cm17 == 1) %>% count(recall)
+svytable(~recall, design = mics6.ch.wm_design_subset_b)
+
+
+mics6.ch.wm_design_subset_b_vaccard %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                ethnicity_r,
+                melevel,
+                mn20_2,
+                mn2_mn5,
+                mn19_all_1,
+                ub2,
+                recall,
+                hepb0_rc_2), 
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics6_descriptive_ch_0-2_vac-card_bd.xlsx",
+                       borders = 0.4,
+                       open = interactive())
+
+mics6.ch.wm_design_subset_b_recall %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                ethnicity_r,
+                melevel,
+                mn20_2,
+                mn2_mn5,
+                mn19_all_1,
+                ub2,
+                recall,
+                hepb0_rc_2), 
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics6_descriptive_ch_0-2_recall_bd.xlsx",
+                       borders = 0.4,
+                       open = interactive())
 
 ```
 
@@ -2557,7 +2613,32 @@ summ(mod2f)
 
 
 
+```{r export models}
+
+export_summs(mod1, mod1a, mod2, mod2a, mod2b, mod2c, mod2d, mod2e, mod2f,
+             exp = TRUE, 
+             error_format = "[{conf.low}, {conf.high}], {p.value}", 
+             error_pos = c("right"), 
+             ci_level = 0.95, 
+             stars= NULL,
+             model.names = c("Logistic regression - mod1", 
+                             "Logistic regression - mod1a", 
+                             "Logistic regression - mod2",
+                             "Logistic regression - mod2a",
+                             "Logistic regression - mod2b",
+                             "Logistic regression - mod2c",
+                             "Logistic regression - mod2d",
+                             "Logistic regression - mod2e",
+                             "Logistic regression - mod2f"),
+             to.file = "xlsx", file.name = "./tables/mics6-sensitivity-analysis_bd.xlsx")
+
+```
+
+
+
+
 #### pentavalent vaccine
+
 
 ```{r subset and survey design - children with and without vaccination cards}
 
@@ -2584,6 +2665,55 @@ mics6.ch.wm_design_subset_p_vaccard
 mics6.ch.wm_design_subset_p_recall <- subset(mics6.ch.wm_design, domain_p_recall)
 mics6.ch.wm_design_subset_p_recall
 
+
+```
+
+
+```{r descriptive analysis table}
+
+svytotal(~recall, design = mics6.ch.wm_design_subset_p)
+
+mics6.ch.wm_design_subset_p_vaccard %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                ethnicity_r,
+                melevel,
+                mn20_2,
+                mn2_mn5,
+                mn19_all_1,
+                ub2,
+                recall,
+                hepb0_rc_2), 
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics6_descriptive_ch_1-2_vac-card_p.xlsx",
+                       borders = 0.4,
+                       open = interactive())
+
+mics6.ch.wm_design_subset_p_recall %>% 
+  gtsummary::tbl_svysummary(
+    include = c(hh6, 
+                hh7r_2,
+                windex5,
+                hl4, 
+                ethnicity_r,
+                melevel,
+                mn20_2,
+                mn2_mn5,
+                mn19_all_1,
+                ub2,
+                recall,
+                hepb0_rc_2), 
+        digits = (all_categorical() ~ c(2))
+  ) %>% 
+  as_hux_table() %>% 
+  huxtable::quick_xlsx(file ="./tables/mics6_descriptive_ch_1-2_recall_p.xlsx",
+                       borders = 0.4,
+                       open = interactive())
 
 ```
 
@@ -2771,23 +2901,6 @@ export_summs(mod1, mod1a, mod1b, mod2, mod2a, mod2b, mod2c, mod2d, mod2e, mod2f,
 
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
